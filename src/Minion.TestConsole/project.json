@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0-*",
+  "testRunner": "xunit",
+  "buildOptions": {
+    "emitEntryPoint": true
+  },
+
+  "dependencies": {
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.1"
+    },
+    "Minion.Core": "1.0.0-*",
+    "Minion.Ioc": "1.0.0-*",
+    "dotnet-test-xunit": "2.2.0-preview2-build1029",
+    "xunit": "2.2.0-beta5-build3474",
+     "xunit.runner.console": "2.2.0-beta5-build3474",
+     "System.Reflection.Emit.ILGeneration": "4.3.0",
+     "System.Reflection.Emit": "4.3.0"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": "dnxcore50"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+	"version": "1.0.0-*",
+	"description": "Minion.Emit Class Library",
+	"authors": [ "ejensen" ],
+	"frameworks": {
+		"netstandard1.6": {
+			"imports": "dnxcore50"
+		}
+	},
+	"dependencies": {
+		"Minion.Core": "1.0.0-*",
+		"System.Reflection.Emit": "4.0.1"
+	}
+}

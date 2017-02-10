@@ -1,0 +1,22 @@
+{
+	"version": "1.0.0-*",
+	"description": "Minion.Core Class Library",
+	"authors": [ "ejensen" ],
+	"frameworks": {
+		"netstandard1.6": {
+			"imports": "dnxcore50"
+		}
+	},
+
+  "dependencies": {
+    "Microsoft.AspNetCore.Http.Abstractions": "1.0.1",
+    "Microsoft.AspNetCore.Mvc.Abstractions": "1.0.1",
+    "Microsoft.AspNetCore.Mvc.ViewFeatures": "1.0.1",
+    "Microsoft.Extensions.Caching.Abstractions": "1.0.1",
+    "Microsoft.Extensions.Logging.Abstractions": "1.0.1",
+    "Newtonsoft.Json": "9.0.1",
+    "System.Data.SqlClient": "4.1.0",
+    "System.ServiceModel.Primitives": "4.3.0"
+    
+  }
+}
