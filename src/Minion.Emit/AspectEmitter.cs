@@ -58,8 +58,8 @@ namespace Minion.Emit
 
 			var naming = new ScopeNamespace(baseType);
 			var assemblyName = new AssemblyName() { Name = naming.Key };
-			var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndSave);
-			var modBuilder = assemblyBuilder.DefineDynamicModule(MODULE_NAME);
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
+            var modBuilder = assemblyBuilder.DefineDynamicModule(MODULE_NAME);
 			var typeAttr = TypeAttributes.Class | TypeAttributes.Public;
 
 			var typeBuilder = modBuilder.DefineType(naming.Key + "Proxy", typeAttr, baseType);
@@ -69,12 +69,11 @@ namespace Minion.Emit
 			GenProperties(baseType, typeBuilder);
 			GenMethods(baseType, typeBuilder);
 
-			var targetType = typeBuilder.CreateType();
+			var targetType = typeBuilder.CreateTypeInfo();
+           
+            return targetType.AsType();
 
-			//assemblyBuilder.Save(MODULE_NAME);
-
-			return targetType;
-		}
+        }
 
 		private void GenConstuctors(Type baseType, TypeBuilder builder)
 		{
@@ -108,7 +107,7 @@ namespace Minion.Emit
 
 			foreach (var prop in properties)
 			{
-				var attributes = EmitHelpers.GetAttributeContainers(prop.GetCustomAttributes(true), prop.GetCustomAttributesData()).ToArray();
+				var attributes = EmitHelpers.GetAttributeContainers(prop.GetCustomAttributes(true), prop.GetCustomAttributes()).ToArray();
 
 				if (attributes.Length == 0)
 				{

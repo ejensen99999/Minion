@@ -17,6 +17,8 @@ FakesAssemblies/
 .ntvs_analysis.dat
 
 # Project Files and Folders
+bin/
+obj/
 packages/
 artifacts/
 .vs/

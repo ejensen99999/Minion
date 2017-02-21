@@ -5,7 +5,6 @@ namespace Minion.Emit
 {
 	public sealed class TypeCache: ITypeCache
 	{
-		//private static volatile TypeCache _instance;
 		private static readonly object _syncTypes;
 		private static readonly ConcurrentDictionary<string, Type> _typeCache;
 

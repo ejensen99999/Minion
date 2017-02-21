@@ -230,5 +230,42 @@ namespace Minion.Ioc
 
             return this;
         }
+
+        public Container AddConditional<TContract, TTrueConcrete, TFalseConcrete>(bool isTrue, 
+            Lifetime lifecycle = Lifetime.Transient)
+            where TTrueConcrete : TContract
+            where TFalseConcrete : TContract
+        {
+            return AddConditional<TContract, TTrueConcrete, TFalseConcrete>(isTrue, null, null, lifecycle);
+        }
+
+        public Container AddConditional<TContract, TTrueConcrete, TFalseConcrete>(bool isTrue, 
+            TTrueConcrete trueObj, 
+            TFalseConcrete falseObj, 
+            Lifetime lifecycle = Lifetime.Transient)
+            where TTrueConcrete : TContract
+            where TFalseConcrete : TContract
+        {
+            return AddConditional< TContract, TTrueConcrete, TFalseConcrete>(isTrue, x => trueObj, x => falseObj, lifecycle);
+        }
+
+        public Container AddConditional<TContract, TTrueConcrete, TFalseConcrete>(bool isTrue, 
+            Func<IServiceProvider, TTrueConcrete> trueExp,
+            Func<IServiceProvider, TFalseConcrete> falseExp, 
+            Lifetime lifecycle = Lifetime.Transient)
+            where TTrueConcrete : TContract
+            where TFalseConcrete : TContract
+        {
+            if (isTrue)
+            {
+                _profiler.SetMapping<TContract, TTrueConcrete>(lifecycle, x => trueExp);
+            }
+            else
+            {
+                _profiler.SetMapping<TContract, TFalseConcrete>(lifecycle, x => falseExp);
+            }
+
+            return this;
+        }
     }
 }
