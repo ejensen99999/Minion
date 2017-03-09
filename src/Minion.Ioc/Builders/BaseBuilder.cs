@@ -41,26 +41,6 @@ namespace Minion.Ioc.Builders
             return output;
         }
 
-        //protected dynamic MaterializeType(Container container,
-        //    Profile profile,
-        //    List<dynamic> parameters)
-        //{
-        //    var output = default(object);
-
-        //    if (profile.Concrete.Equals(typeof(Container)))
-        //    {
-        //        output = container;
-        //    }
-        //    else
-        //    {
-        //        output = parameters == null || parameters.Count == 0
-        //            ? Activator.CreateInstance(profile.Concrete)
-        //            : Activator.CreateInstance(profile.Concrete, parameters.ToArray());
-        //    }
-
-        //    return output;
-        //}
-
         protected dynamic MaterializeType(Container container,
             Profile profile,
             List<dynamic> parameters)
