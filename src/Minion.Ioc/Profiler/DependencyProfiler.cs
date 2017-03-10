@@ -7,6 +7,7 @@ using Minion.Ioc.Exceptions;
 using System.Collections.Generic;
 using Minion.Ioc.Interfaces;
 using Minion.Ioc.Models;
+using Minion.Ioc.Aspects;
 
 namespace Minion.Ioc.Profiler
 {
@@ -14,14 +15,16 @@ namespace Minion.Ioc.Profiler
     {
         private readonly object _synclock;
         private readonly ILogger _log;
+        private readonly ConstructorProfiler _ctorProfiler;
         private readonly ConcurrentDictionary<Type, ITypeBuilder> _builders;
 
         public ConcurrentDictionary<Type, ITypeBuilder> Builders { get { return _builders; } }
 
-        public DependencyProfiler(ILogger log)
+        public DependencyProfiler(ILogger log, ConstructorProfiler ctorProfiler)
         {
             _synclock = new object();
             _log = log;
+            _ctorProfiler = ctorProfiler;
             _builders = new ConcurrentDictionary<Type, ITypeBuilder>();
         }
 
@@ -45,11 +48,11 @@ namespace Minion.Ioc.Profiler
                     {
                         if (!_builders.ContainsKey(contract))
                         {
-                            var ctor = initializer != null
+                            var ctorDefinition = initializer != null
                                 ? new ConstructorDefinition(new List<ParameterDefinition>(), null)
-                                : new ConstructorProfiler().GetTargetConstructor(contract, concrete);
+                                : _ctorProfiler.GetTargetConstructor(contract, concrete);
 
-                            var profile = new Profile(_log, contract, concrete, lifetime, initializer, ctor);
+                            var profile = new Profile(_log, contract, concrete, lifetime, initializer, ctorDefinition);
 
                             _builders.TryAdd(contract, GetTypeBuilder(profile, lifetime));
                         }

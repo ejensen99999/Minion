@@ -28,15 +28,15 @@ namespace Minion.Ioc.Models
             Type concrete,
             Lifetime lifecycle,
             Func<Container, dynamic> initializer,
-            ConstructorDefinition ctor)
+            ConstructorDefinition ctorDefinition)
         {
             Log = log;
             Concrete = concrete;
             Contract = contract;
             Lifecycle = lifecycle;
             Initializer = initializer;
-            Parameters = ctor.Parameters;
-            _constructor = ctor.Constructor;
+            Parameters = ctorDefinition.Parameters;
+            _constructor = ctorDefinition.Constructor;
         }
 
         public object Construct(List<object> parameters)

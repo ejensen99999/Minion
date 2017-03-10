@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Minion.Ioc.Profiler;
 using Minion.Ioc.Builders;
+using Minion.Ioc.Aspects;
 
 namespace Minion.Tests.IocTests.Integration
 {
@@ -18,7 +19,7 @@ namespace Minion.Tests.IocTests.Integration
         {
             var log = new Mock<ILogger>().Object;
           
-            var profiler = new DependencyProfiler(log);
+            var profiler = new DependencyProfiler(log, new ConstructorProfiler(new TypeCache(new PassThroughEmitter())));
             var resolver = new DepedencyResolver(log, profiler);
             var container = new Container(log, profiler, resolver);
 

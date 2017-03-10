@@ -9,6 +9,7 @@ using Minion.Ioc.Profiler;
 using Minion.Ioc.Builders;
 using System.Linq;
 using Minion.Ioc.Interfaces;
+using Minion.Ioc.Aspects;
 
 namespace Minion.Tests.IocTests.Integration
 {
@@ -18,7 +19,7 @@ namespace Minion.Tests.IocTests.Integration
         public void test_set_mapping_with_registration_throws_exception()
         {
             var log = new Mock<ILogger>();
-            var profiler = new DependencyProfiler(log.Object);
+            var profiler = new DependencyProfiler(log.Object, new ConstructorProfiler(new TypeCache(new PassThroughEmitter())));
             var contract = typeof(IClockEvent);
             var concrete = typeof(ClockEvent);
 
@@ -42,7 +43,7 @@ namespace Minion.Tests.IocTests.Integration
         public void test_set_mapping_throws_no_valid_constructor_exception()
         {
             var log = new Mock<ILogger>();
-            var profiler = new DependencyProfiler(log.Object);
+            var profiler = new DependencyProfiler(log.Object, new ConstructorProfiler(new TypeCache(new PassThroughEmitter())));
             var contract = typeof(NoValidConstructor);
             var concrete = typeof(NoValidConstructor);
 

@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Logging;
 using Minion.Ioc.Profiler;
 using Minion.Ioc.Builders;
+using Minion.Ioc.Aspects;
+using Minion.Ioc.Interfaces;
 
 namespace Minion.Ioc
 {
@@ -16,17 +18,19 @@ namespace Minion.Ioc
         static ContainerManager()
         {
             Factory = new LoggerFactory();
-            NameSpace = typeof (Container).FullName;
+            NameSpace = typeof(Container).FullName;
 
             Containers = new ConcurrentDictionary<string, Container>();
         }
 
-        public static Container GetContainer(string key = Default)
+        public static Container GetContainer(string containerName = Default, bool useAspects = false)
         {
-            var container = Containers.GetOrAdd(key, x =>
+            var container = Containers.GetOrAdd(containerName, x =>
             {
-                var log = Factory.CreateLogger($"{key} {NameSpace}");
-                var profiler = new DependencyProfiler(log);
+                var log = Factory.CreateLogger($"{containerName} {NameSpace}");
+                var emitter = useAspects ? (IEmitter)new AspectEmitter() : (IEmitter)new PassThroughEmitter();
+                var cache = new TypeCache(emitter);
+                var profiler = new DependencyProfiler(log, new ConstructorProfiler(cache));
                 var builder = new DepedencyResolver(log, profiler);
 
                 return new Container(log, profiler, builder);

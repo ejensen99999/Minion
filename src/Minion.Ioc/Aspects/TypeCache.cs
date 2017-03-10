@@ -1,46 +1,61 @@
-﻿using System;
+﻿using Minion.Ioc.Interfaces;
+using System;
 using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace Minion.Ioc.Aspects
 {
-	public sealed class TypeCache: ITypeCache
+     public interface ITypeCache
+     {
+          Type GetType<T>(ConstructorInfo ctor)
+               where T : class;
+
+          Type GetType(Type concrete,
+               ConstructorInfo ctor);
+     }
+
+     public sealed class TypeCache: ITypeCache
 	{
-		private static readonly object _syncTypes;
-		private static readonly ConcurrentDictionary<string, Type> _typeCache;
+		private readonly object _syncTypes;
+	     private readonly IEmitter _emitter;
+		private readonly ConcurrentDictionary<string, Type> _typeCache;
 
-		public TypeCache()
+		public TypeCache(IEmitter emitter)
 		{
-		}
-
-		static TypeCache()
-		{
-			_syncTypes = new Object();
+               _syncTypes = new object();
+		     _emitter = emitter;
 			_typeCache = new ConcurrentDictionary<string, Type>();
 		}
 
-		public Type GetType<T>(Func<ScopeNamespace, string> scope, IEmitter emitter)
+	     public Type GetType<T>(ConstructorInfo ctor)
 			where T : class
-		{
-			return GetType<T>(scope(new ScopeNamespace(typeof(T))), emitter);
-		}
+	     {
+	          return GetType(typeof(T), ctor);
+	     }
 
-		public Type GetType<T>(string key, IEmitter emitter)
-			where T : class
-		{
-			Type target;
-			if (!_typeCache.TryGetValue(key, out target))
-			{
-				lock (_syncTypes)
-				{
-					if (!_typeCache.TryGetValue(key, out target))
-					{
-						target = emitter.GenerateType(typeof(T));
+          public Type GetType(Type concrete,
+	          ConstructorInfo ctor)
+	     {
+	          if(concrete != null)
+               {
+	               var key = concrete.FullName;
+	               Type target;
+	               if (!_typeCache.TryGetValue(key, out target))
+	               {
+	                    lock (_syncTypes)
+	                    {
+	                         if (!_typeCache.TryGetValue(key, out target))
+	                         {
+                                   target = _emitter.GenerateType(concrete);
 
-						_typeCache.TryAdd(key, target);
-					}
-				}
-			}
-			return target;
-		}
+	                              _typeCache.TryAdd(key, target);
+	                         }
+	                    }
+	               }
+                    concrete = target;
+	          }
+
+               return concrete;
+	     }
 	}
 }

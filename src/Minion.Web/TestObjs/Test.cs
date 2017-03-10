@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Minion.Web.Models
+namespace Minion.Web.TestObjs
 {
     public interface ITest
     {

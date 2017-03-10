@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Minion.Ioc.Interfaces;
 using Minion.Ioc.Models;
+using System.Linq;
 
 namespace Minion.Ioc.Profiler
 {

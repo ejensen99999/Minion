@@ -7,6 +7,7 @@ using Minion.Configuration;
 using Minion.Ioc;
 using Minion.Ioc.Middleware;
 using Minion.Web.Models;
+using Minion.Web.TestObjs;
 
 namespace Minion.Web
 {
@@ -23,7 +24,7 @@ namespace Minion.Web
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
 
-           _container = ContainerManager.GetContainer();
+           _container = ContainerManager.GetContainer(useAspects: true);
         }
 
         public IConfigurationRoot Configuration { get; }
