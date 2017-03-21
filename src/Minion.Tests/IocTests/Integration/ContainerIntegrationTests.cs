@@ -19,7 +19,7 @@ namespace Minion.Tests.IocTests.Integration
         {
             var log = new Mock<ILogger>().Object;
           
-            var profiler = new DependencyProfiler(log, new ConstructorProfiler(new TypeCache(new PassThroughEmitter())));
+            var profiler = new DependencyProfiler(log, new ConstructorProfiler(new TypeCache(new AspectEmitter())));
             var resolver = new DepedencyResolver(log, profiler);
             var container = new Container(log, profiler, resolver);
 

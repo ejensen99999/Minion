@@ -24,7 +24,7 @@ namespace Minion.Web
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
 
-           _container = ContainerManager.GetContainer(useAspects: true);
+           _container = ContainerManager.GetContainer();
         }
 
         public IConfigurationRoot Configuration { get; }
@@ -45,7 +45,7 @@ namespace Minion.Web
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-            app.UseMinionIocThreaded(_container);
+            app.UseMinionThreadedIoc(_container);
             app.UseMvc();
 
             InitializeContainer(app, _container);
@@ -71,7 +71,6 @@ namespace Minion.Web
                 .AddTransient<IBusinessLogic, BusinessLogic>()
                 .AddTransient<IRespository, Respository>()
                 .AddThreadAsync<ITest, Test>();
-
         }
     }
 }

@@ -23,12 +23,12 @@ namespace Minion.Ioc
             Containers = new ConcurrentDictionary<string, Container>();
         }
 
-        public static Container GetContainer(string containerName = Default, bool useAspects = false)
+        public static Container GetContainer(string containerName = Default)
         {
             var container = Containers.GetOrAdd(containerName, x =>
             {
                 var log = Factory.CreateLogger($"{containerName} {NameSpace}");
-                var emitter = useAspects ? (IEmitter)new AspectEmitter() : (IEmitter)new PassThroughEmitter();
+                var emitter = new AspectEmitter();
                 var cache = new TypeCache(emitter);
                 var profiler = new DependencyProfiler(log, new ConstructorProfiler(cache));
                 var builder = new DepedencyResolver(log, profiler);
