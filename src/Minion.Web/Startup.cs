@@ -31,28 +31,8 @@ namespace Minion.Web
         {
             // Add framework services.
             services.AddMvc();
-            services.AddMinionIocActivator();
-        }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app,
-            IHostingEnvironment env,
-            ILoggerFactory loggerFactory)
-        {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
-
-            app
-                .UseMinionThreadedIoc()
-                .UseMvc();
-
-            InitializeContainer(app);
-        }
-
-        private void InitializeContainer(IApplicationBuilder app)
-        {
-            // Add application presentation components:
-            app.RegisterComponents()
+            services
+                .AddMinionIocActivator()
                 .AddConfiguration<Settings>(Configuration)
                 .AddConfiguration<ActiveDirectorySettings>(Configuration)
                 .AddConfiguration<BusSettings>(Configuration)
@@ -68,6 +48,19 @@ namespace Minion.Web
                 .AddTransient<IBusinessLogic, BusinessLogic>()
                 .AddTransient<IRespository, Respository>()
                 .AddThreadAsync<ITest, Test>();
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app,
+            IHostingEnvironment env,
+            ILoggerFactory loggerFactory)
+        {
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();
+
+            app
+                .UseMinionThreadedIoc()
+                .UseMvc();
         }
     }
 }

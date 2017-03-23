@@ -17,18 +17,6 @@ namespace Minion.Ioc.Middleware
     {
         private static string _containerName;
 
-        public static Container Container(this IApplicationBuilder app)
-        {
-            return ContainerManager.GetContainer(_containerName);
-        }
-
-        public static ILogger GetLog(this Container container)
-        {
-            var log = container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
-
-            return log;
-        }
-
         public static Container AddMinionIocActivator(this IServiceCollection services, string containerName = null)
         {
             _containerName = containerName;
@@ -38,6 +26,8 @@ namespace Minion.Ioc.Middleware
             services.AddSingleton<IViewComponentActivator>(activator);
 
             container.Populate(services);
+            container.RegisterMvcControllers();
+            container.RegisterMvcViewComponents();
 
             return container;
         }
@@ -56,72 +46,16 @@ namespace Minion.Ioc.Middleware
             return container;
         }
 
-        public static Container RegisterComponents(this IApplicationBuilder applicationBuilder)
+        public static Container Container(this IApplicationBuilder app)
         {
-            var container = ContainerManager.GetContainer(_containerName);
-            container.RegisterMvcControllers(applicationBuilder);
-            container.RegisterMvcViewComponents(applicationBuilder);
-
-            return container;
+            return ContainerManager.GetContainer(_containerName);
         }
 
-        public static void RegisterMvcControllers(this Container container, IApplicationBuilder applicationBuilder)
+        public static ILogger GetLog(this Container container)
         {
-            try
-            {
-                var controllerFeature = new ControllerFeature();
-                var requiredService = ServiceProviderServiceExtensions
-                    .GetRequiredService<ApplicationPartManager>(applicationBuilder.ApplicationServices);
+            var log = container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
 
-                requiredService.PopulateFeature(controllerFeature);
-
-                RegisterTypes(container, controllerFeature.Controllers.Select(x => x.AsType()));
-            }
-            catch (Exception ex)
-            {
-                var log = container.GetLog();
-                log.LogError("An error was thrown registering the mvc controllers", ex);
-                throw;
-            }
-        }
-
-        public static void RegisterMvcViewComponents(this Container container,
-            IApplicationBuilder applicationBuilder)
-        {
-            try
-            {
-                var service = ServiceProviderServiceExtensions
-                    .GetService<IViewComponentDescriptorProvider>(applicationBuilder.ApplicationServices);
-
-                if (service == null)
-                {
-                    throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
-                        "A registration for the {0} is missing from the ASP.NET Core configuration system.\n" +
-                        "Make sure it is registered or pass it in using the RegisterMvcViewComponents overload that accepts {1}." +
-                        "You can ensure that {1} is registered by either calling .AddMvc() or .AddViews() on the" +
-                        "IServiceCollection class in the ConfigureServices method. Do note that calling .AddMvcCore() will not" +
-                        "result in a registered {1}.",
-                        typeof(IViewComponentDescriptorProvider).FullName,
-                        typeof(IViewComponentDescriptorProvider).Name));
-                }
-
-                RegisterTypes(container, service.GetViewComponents()
-                    .Select(x => x.TypeInfo.AsType()));
-            }
-            catch (Exception ex)
-            {
-                var log = container.GetLog();
-                log.LogError("An error was thrown registering the mvc view components", ex);
-                throw;
-            }
-        }
-
-        private static void RegisterTypes(this Container container, IEnumerable<Type> types)
-        {
-            foreach (var type in types)
-            {
-                container.Profiler.SetMapping(type, type, Lifetime.Transient, null);
-            }
+            return log;
         }
 
         public static Container Populate(this Container container, IServiceCollection services)
@@ -168,6 +102,62 @@ namespace Minion.Ioc.Middleware
             }
 
             return container;
+        }
+
+        public static void RegisterMvcControllers(this Container container)
+        {
+            try
+            {
+                var controllerFeature = new ControllerFeature();
+                var requiredService = container.Get<ApplicationPartManager>();
+
+                requiredService.PopulateFeature(controllerFeature);
+
+                RegisterTypes(container, controllerFeature.Controllers.Select(x => x.AsType()));
+            }
+            catch (Exception ex)
+            {
+                var log = container.GetLog();
+                log.LogError("An error was thrown registering the mvc controllers", ex);
+                throw;
+            }
+        }
+
+        public static void RegisterMvcViewComponents(this Container container)
+        {
+            try
+            {
+                var service = container.Get<IViewComponentDescriptorProvider>();
+
+                if (service == null)
+                {
+                    throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
+                        "A registration for the {0} is missing from the ASP.NET Core configuration system.\n" +
+                        "Make sure it is registered or pass it in using the RegisterMvcViewComponents overload that accepts {1}." +
+                        "You can ensure that {1} is registered by either calling .AddMvc() or .AddViews() on the" +
+                        "IServiceCollection class in the ConfigureServices method. Do note that calling .AddMvcCore() will not" +
+                        "result in a registered {1}.",
+                        typeof(IViewComponentDescriptorProvider).FullName,
+                        typeof(IViewComponentDescriptorProvider).Name));
+                }
+
+                RegisterTypes(container, service.GetViewComponents()
+                    .Select(x => x.TypeInfo.AsType()));
+            }
+            catch (Exception ex)
+            {
+                var log = container.GetLog();
+                log.LogError("An error was thrown registering the mvc view components", ex);
+                throw;
+            }
+        }
+
+        private static void RegisterTypes(this Container container, IEnumerable<Type> types)
+        {
+            foreach (var type in types)
+            {
+                container.Profiler.SetMapping(type, type, Lifetime.Transient, null);
+            }
         }
 
         public static IApplicationBuilder UseMinionThreadedIoc(this IApplicationBuilder app)
