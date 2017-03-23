@@ -23,8 +23,10 @@ namespace Minion.Ioc
             Containers = new ConcurrentDictionary<string, Container>();
         }
 
-        public static Container GetContainer(string containerName = Default)
+        public static Container GetContainer(string containerName = null)
         {
+            containerName = string.IsNullOrWhiteSpace(containerName) ? Default : containerName;
+
             var container = Containers.GetOrAdd(containerName, x =>
             {
                 var log = Factory.CreateLogger($"{containerName} {NameSpace}");

@@ -67,7 +67,7 @@ namespace Minion.Ioc.Profiler
             catch (Exception ex)
             {
                 _log.LogError(
-                    $"Could not establish a proper mapping between {contract.FullName} and {concrete.FullName}", ex);
+                    $"Could not establish a proper mapping between {contract?.FullName} and {concrete?.FullName}", ex);
                 throw;
             }
         }

@@ -8,13 +8,12 @@ using Minion.Ioc;
 using Minion.Ioc.Middleware;
 using Minion.Web.Models;
 using Minion.Web.TestObjs;
+using System;
 
 namespace Minion.Web
 {
     public class Startup
     {
-        private readonly Container _container;
-
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -23,8 +22,6 @@ namespace Minion.Web
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
-
-           _container = ContainerManager.GetContainer();
         }
 
         public IConfigurationRoot Configuration { get; }
@@ -34,7 +31,7 @@ namespace Minion.Web
         {
             // Add framework services.
             services.AddMvc();
-            services.AddMinionActivator(_container);
+            services.AddMinionIocActivator();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,17 +42,17 @@ namespace Minion.Web
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-            app.UseMinionThreadedIoc(_container);
-            app.UseMvc();
+            app
+                .UseMinionThreadedIoc()
+                .UseMvc();
 
-            InitializeContainer(app, _container);
+            InitializeContainer(app);
         }
 
-        private void InitializeContainer(IApplicationBuilder app, Container container)
+        private void InitializeContainer(IApplicationBuilder app)
         {
             // Add application presentation components:
-            container
-                .RegisterComponents(app)
+            app.RegisterComponents()
                 .AddConfiguration<Settings>(Configuration)
                 .AddConfiguration<ActiveDirectorySettings>(Configuration)
                 .AddConfiguration<BusSettings>(Configuration)
