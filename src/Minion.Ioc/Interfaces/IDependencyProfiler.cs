@@ -5,7 +5,7 @@ namespace Minion.Ioc.Interfaces
 {
     public interface IDependencyProfiler
     {
-        ConcurrentDictionary<Type, ITypeBuilder> Builders { get; }
+        ConcurrentDictionary<string, ITypeBuilder> Builders { get; }
 
         void SetMapping<TContract, TConcrete>(Lifetime lifecycle, Func<IServiceProvider, object> initializer);
 

@@ -12,6 +12,7 @@ namespace Minion.Ioc.Aspects
     public class AspectEmitter : IEmitter
     {
         private const string MODULE_NAME = "Minion.Ioc.Aspects.Types.dll";
+        private const string DECORATOR = "Proxy";
         private readonly ModuleBuilder _modBuilder;
 
         public AspectEmitter()
@@ -40,7 +41,7 @@ namespace Minion.Ioc.Aspects
             }
         
             var typeAttr = TypeAttributes.Class | TypeAttributes.Public;
-            var typeBuilder = _modBuilder.DefineType(baseType.FullName + "Proxy", typeAttr, baseType);
+            var typeBuilder = _modBuilder.DefineType(baseType.FullName + DECORATOR, typeAttr, baseType);
             typeBuilder.AddInterfaceImplementation(typeof(IAspect));
 
             if (ctor == null)

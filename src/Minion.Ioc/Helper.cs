@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -11,7 +12,8 @@ namespace Minion.Ioc
 {
     public static class Helper
     {
-        public static bool CheckDependancyChain(Type input, Type searchType)
+        public static bool CheckDependancyChain(Type input,
+            Type searchType)
         {
             var output = false;
             var baseType = input.GetTypeInfo()
@@ -29,7 +31,8 @@ namespace Minion.Ioc
             return output;
         }
 
-        public static AspectEventContext CreateAspectContext(object callerReference, string memberName = "")
+        public static AspectEventContext CreateAspectContext(object callerReference,
+            string memberName = "")
         {
             return new AspectEventContext
             {
@@ -39,7 +42,8 @@ namespace Minion.Ioc
             };
         }
 
-        public static void CreateConstructorNameSpace(this ScopeNamespace name, object[] args)
+        public static void CreateConstructorNameSpace(this ScopeNamespace name,
+            object[] args)
         {
             var output = "";
 
@@ -68,7 +72,8 @@ namespace Minion.Ioc
             return (TContract)output;
         }
 
-        public static IEnumerable<CustomAttributeContainer> GetAttributeContainers(IEnumerable<Attribute> attributes, IList<CustomAttributeData> attributesData)
+        public static IEnumerable<CustomAttributeContainer> GetAttributeContainers(IEnumerable<Attribute> attributes,
+            IList<CustomAttributeData> attributesData)
         {
             var output = new List<CustomAttributeContainer>();
             var atts = attributes.ToArray();
@@ -104,7 +109,8 @@ namespace Minion.Ioc
             return CustomAttributeData.GetCustomAttributes(method);
         }
 
-        public static bool InheritsFrom(this Type obj1, Type obj2)
+        public static bool InheritsFrom(this Type obj1,
+            Type obj2)
         {
             bool output;
 
@@ -129,7 +135,8 @@ namespace Minion.Ioc
             return info.IsValueType;
         }
 
-        public static void LoadForValueType(this ILGenerator emitter, object value)
+        public static void LoadForValueType(this ILGenerator emitter,
+            object value)
         {
             var type = value != null ? value.GetType().ToString() : "NULL";
 
@@ -238,6 +245,34 @@ namespace Minion.Ioc
             }
 
             return output;
+        }
+
+        public static bool ContainsKey<V>(this ConcurrentDictionary<string, V> dictionary,
+            Type type)
+        {
+            var key = type.GetTypeName();
+            return dictionary.ContainsKey(key);
+        }
+
+        public static bool TryAdd<V>(this ConcurrentDictionary<string, V> dictionary,
+            Type type,
+            V obj)
+        {
+            var key = type.GetTypeName();
+            return dictionary.TryAdd(key, obj);
+        }
+
+        public static bool TryGetValue<V>(this ConcurrentDictionary<string, V> dictionary,
+            Type type,
+            out V obj)
+        {
+            var key = type.GetTypeName();
+            return dictionary.TryGetValue(key, out obj);
+        }
+
+        public static string GetTypeName(this Type type)
+        {
+            return type.FullName;
         }
     }
 }

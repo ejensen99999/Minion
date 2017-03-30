@@ -16,16 +16,16 @@ namespace Minion.Ioc.Profiler
         private readonly object _synclock;
         private readonly ILogger _log;
         private readonly ConstructorProfiler _ctorProfiler;
-        private readonly ConcurrentDictionary<Type, ITypeBuilder> _builders;
+        private readonly ConcurrentDictionary<string, ITypeBuilder> _builders;
 
-        public ConcurrentDictionary<Type, ITypeBuilder> Builders { get { return _builders; } }
+        public ConcurrentDictionary<string, ITypeBuilder> Builders { get { return _builders; } }
 
         public DependencyProfiler(ILogger log, ConstructorProfiler ctorProfiler)
         {
             _synclock = new object();
             _log = log;
             _ctorProfiler = ctorProfiler;
-            _builders = new ConcurrentDictionary<Type, ITypeBuilder>();
+            _builders = new ConcurrentDictionary<string, ITypeBuilder>();
         }
 
         public bool Clean(Guid contextId)
@@ -92,5 +92,7 @@ namespace Minion.Ioc.Profiler
 
             return output;
         }
+
+
     }
 }

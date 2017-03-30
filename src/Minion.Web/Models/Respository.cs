@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Minion.Ioc;
 using Minion.Web.TestObjs;
 using Minion.Ioc.Aspects;
+using Microsoft.Extensions.Options;
 
 namespace Minion.Web.Models
 {
@@ -36,6 +37,7 @@ namespace Minion.Web.Models
         }
 
         [MyMethodAspect(1)]
+        [MyMethodAspect2(2)]
         public virtual string GetId()
         {
             return _test.Id.ToString();

@@ -39,9 +39,11 @@ namespace Minion.Ioc.Middleware
             var settings = new TConfigure();
             var config = new ConfigureFromConfigurationOptions<TConfigure>(section);
 
-            config.Configure(settings);
-
-            container.AddSingleton(settings);
+            container.AddTransient(x =>
+            {
+                config.Configure(settings);
+                return settings;
+            });
 
             return container;
         }
@@ -62,6 +64,7 @@ namespace Minion.Ioc.Middleware
         {
             var profiler = container.Profiler;
             var serviceProvider = services.BuildServiceProvider();
+            ILogger log = null;
 
             foreach (var service in services)
             {
@@ -83,11 +86,6 @@ namespace Minion.Ioc.Middleware
                         profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
                             x => service.ImplementationFactory(x));
                     }
-                    //else if (instanceType.InheritsFrom(serviceType))
-                    //{
-                    //    profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
-                    //        x => service.ImplementationInstance);
-                    //}
                     else
                     {
                         profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
@@ -96,7 +94,7 @@ namespace Minion.Ioc.Middleware
                 }
                 catch (Exception ex)
                 {
-                    var log = container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
+                    log = log ?? container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
                     log?.LogError("Populate method found an issue with a registration", ex);
                 }
             }

@@ -391,6 +391,19 @@ namespace Minion.Tests.IocTests.Integration
             Assert.Equal(700, actual2.ClockId);
         }
 
+        [Fact]
+        public void container_add_registration_transient_load_get()
+        {
+            var container = getContainer();
+
+            container.Add<ClockEvent>(Lifetime.Transient);
+
+            for (var i = 0; i < 100000000; i++)
+            {
+                var actual = container.Get<ClockEvent>();
+            }
+        }
+
         private async Task AsynchronusA(Container container)
         {
             var target = container.Get<IClockEvent>();
@@ -474,5 +487,7 @@ namespace Minion.Tests.IocTests.Integration
 
             return true;
         }
+
+      
     }
 }

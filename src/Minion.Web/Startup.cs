@@ -32,6 +32,7 @@ namespace Minion.Web
             // Add framework services.
             services.AddMvc();
             services
+                .AddDistributedMemoryCache()
                 .AddMinionIocActivator()
                 .AddConfiguration<Settings>(Configuration)
                 .AddConfiguration<ActiveDirectorySettings>(Configuration)

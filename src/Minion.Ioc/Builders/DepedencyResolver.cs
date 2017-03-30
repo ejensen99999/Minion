@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Minion.Ioc.Exceptions;
 using Minion.Ioc.Interfaces;
+using System.Reflection;
+using System.Linq;
 
 namespace Minion.Ioc.Builders
 {
@@ -23,6 +25,8 @@ namespace Minion.Ioc.Builders
             var output = default(object);
             var builders = _profiler.Builders;
 
+            var contractInfo = contract.GetTypeInfo();
+
             try
             {
                 ITypeBuilder builder;
@@ -34,6 +38,13 @@ namespace Minion.Ioc.Builders
                 {
                     output = container;
                 }
+                else if (contractInfo.IsGenericType)
+                {
+                    var t = 0;
+                    var genArgs = contractInfo.GetGenericArguments();
+                    var txt = string.Join(", ", genArgs.Select(x => x.AssemblyQualifiedName));
+                    var ass = contractInfo.AssemblyQualifiedName;
+                }
                 else
                 {
                     output = Activator.CreateInstance(contract);
@@ -41,7 +52,7 @@ namespace Minion.Ioc.Builders
             }
             catch (Exception ex)
             {
-                var message = "Could not retrieve Ioc object";
+                var message = "Could not retrieve Ioc object:" + contract.FullName;
                 _log.LogError(message, ex);
                 throw new IocRetrievalException(message, ex);
             }
