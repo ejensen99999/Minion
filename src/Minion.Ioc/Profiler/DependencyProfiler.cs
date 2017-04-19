@@ -7,6 +7,7 @@ using Minion.Ioc.Exceptions;
 using System.Collections.Generic;
 using Minion.Ioc.Interfaces;
 using Minion.Ioc.Models;
+using Minion.Ioc.Aspects;
 
 namespace Minion.Ioc.Profiler
 {
@@ -14,15 +15,17 @@ namespace Minion.Ioc.Profiler
     {
         private readonly object _synclock;
         private readonly ILogger _log;
-        private readonly ConcurrentDictionary<Type, ITypeBuilder> _builders;
+        private readonly ConstructorProfiler _ctorProfiler;
+        private readonly ConcurrentDictionary<string, ITypeBuilder> _builders;
 
-        public ConcurrentDictionary<Type, ITypeBuilder> Builders { get { return _builders; } }
+        public ConcurrentDictionary<string, ITypeBuilder> Builders { get { return _builders; } }
 
-        public DependencyProfiler(ILogger log)
+        public DependencyProfiler(ILogger log, ConstructorProfiler ctorProfiler)
         {
             _synclock = new object();
             _log = log;
-            _builders = new ConcurrentDictionary<Type, ITypeBuilder>();
+            _ctorProfiler = ctorProfiler;
+            _builders = new ConcurrentDictionary<string, ITypeBuilder>();
         }
 
         public bool Clean(Guid contextId)
@@ -45,11 +48,11 @@ namespace Minion.Ioc.Profiler
                     {
                         if (!_builders.ContainsKey(contract))
                         {
-                            var ctor = initializer != null
+                            var ctorDefinition = initializer != null
                                 ? new ConstructorDefinition(new List<ParameterDefinition>(), null)
-                                : new ConstructorProfiler().GetTargetConstructor(contract, concrete);
+                                : _ctorProfiler.GetTargetConstructor(contract, concrete);
 
-                            var profile = new Profile(_log, contract, concrete, lifetime, initializer, ctor);
+                            var profile = new Profile(_log, contract, concrete, lifetime, initializer, ctorDefinition);
 
                             _builders.TryAdd(contract, GetTypeBuilder(profile, lifetime));
                         }
@@ -64,7 +67,7 @@ namespace Minion.Ioc.Profiler
             catch (Exception ex)
             {
                 _log.LogError(
-                    $"Could not establish a proper mapping between {contract.FullName} and {concrete.FullName}", ex);
+                    $"Could not establish a proper mapping between {contract?.FullName} and {concrete?.FullName}", ex);
                 throw;
             }
         }
@@ -89,5 +92,7 @@ namespace Minion.Ioc.Profiler
 
             return output;
         }
+
+
     }
 }

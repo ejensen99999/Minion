@@ -1,0 +1,26 @@
+{
+  "version": "1.0.0-*",
+  "testRunner": "xunit",
+  "buildOptions": {
+    "emitEntryPoint": false
+  },
+
+  "dependencies": {
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.1"
+    },
+    "Minion.Core": "1.0.0-*",
+    "Minion.Ioc": "1.0.0-*",
+    "dotnet-test-xunit": "2.2.0-preview2-build1029",
+    "xunit": "2.2.0",
+    "xunit.runner.console": "2.2.0",
+    "Moq": "4.7.8"
+  },
+
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": "dnxcore50"
+    }
+  }
+}

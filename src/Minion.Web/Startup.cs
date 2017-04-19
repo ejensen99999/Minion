@@ -7,13 +7,13 @@ using Minion.Configuration;
 using Minion.Ioc;
 using Minion.Ioc.Middleware;
 using Minion.Web.Models;
+using Minion.Web.TestObjs;
+using System;
 
 namespace Minion.Web
 {
     public class Startup
     {
-        private readonly Container _container;
-
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -22,8 +22,6 @@ namespace Minion.Web
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
-
-           _container = ContainerManager.GetContainer();
         }
 
         public IConfigurationRoot Configuration { get; }
@@ -33,28 +31,9 @@ namespace Minion.Web
         {
             // Add framework services.
             services.AddMvc();
-            services.AddMinionActivator(_container);
-        }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app,
-            IHostingEnvironment env,
-            ILoggerFactory loggerFactory)
-        {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
-
-            app.UseMinionIocThreaded(_container);
-            app.UseMvc();
-
-            InitializeContainer(app, _container);
-        }
-
-        private void InitializeContainer(IApplicationBuilder app, Container container)
-        {
-            // Add application presentation components:
-            container
-                .RegisterComponents(app)
+            services
+                .AddDistributedMemoryCache()
+                .AddMinionIocActivator()
                 .AddConfiguration<Settings>(Configuration)
                 .AddConfiguration<ActiveDirectorySettings>(Configuration)
                 .AddConfiguration<BusSettings>(Configuration)
@@ -70,7 +49,19 @@ namespace Minion.Web
                 .AddTransient<IBusinessLogic, BusinessLogic>()
                 .AddTransient<IRespository, Respository>()
                 .AddThreadAsync<ITest, Test>();
+        }
 
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app,
+            IHostingEnvironment env,
+            ILoggerFactory loggerFactory)
+        {
+            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
+            loggerFactory.AddDebug();
+
+            app
+                .UseMinionThreadedIoc()
+                .UseMvc();
         }
     }
 }

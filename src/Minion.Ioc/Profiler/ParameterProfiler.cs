@@ -11,7 +11,7 @@ namespace Minion.Ioc.Profiler
 {
     public class ParameterProfiler : IParameterProfile
     {
-        public ConstructorInfo Ctor { get; }
+        public ConstructorInfo Ctor { get; set; }
 
         public List<ParameterDefinition> Parameters { get; }
 

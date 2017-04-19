@@ -1,24 +1,25 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C20B33E4-5D24-47CC-973A-422C09B7F2B9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4A3F60D8-1B53-4EA7-9B1E-30BE3E519DE5}"
 	ProjectSection(SolutionItems) = preProject
+		global.json = global.json
 		Performance4.psess = Performance4.psess
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Minion.Core", "src\Minion.Core\Minion.Core.csproj", "{780C55ED-49EB-4865-9533-42338F442136}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Minion.Core", "src\Minion.Core\Minion.Core.xproj", "{780C55ED-49EB-4865-9533-42338F442136}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Minion.Ioc", "src\Minion.Ioc\Minion.Ioc.csproj", "{E66D9CCF-59E9-4D96-B407-5F26FA0AC74C}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Minion.TestConsole", "src\Minion.TestConsole\Minion.TestConsole.xproj", "{173D3DCC-6CCB-4EE2-BC8D-E349A6E6C586}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Minion.Web", "src\Minion.Web\Minion.Web.csproj", "{6544461F-50B7-43A8-A173-D47B9C389D53}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Minion.Ioc", "src\Minion.Ioc\Minion.Ioc.xproj", "{E66D9CCF-59E9-4D96-B407-5F26FA0AC74C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C4357423-3025-468C-9997-FC464241C661}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Minion.Web", "src\Minion.Web\Minion.Web.xproj", "{6544461F-50B7-43A8-A173-D47B9C389D53}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Minion.Ioc.Tests", "test\Minion.Ioc.Tests\Minion.Ioc.Tests.csproj", "{CB16622A-1236-4726-A88F-36CC4E1ED326}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Minion.Tests", "src\Minion.Tests\Minion.Tests.xproj", "{93716B22-B79C-482C-BABA-F8A7874758BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +31,10 @@ Global
 		{780C55ED-49EB-4865-9533-42338F442136}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{780C55ED-49EB-4865-9533-42338F442136}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{780C55ED-49EB-4865-9533-42338F442136}.Release|Any CPU.Build.0 = Release|Any CPU
+		{173D3DCC-6CCB-4EE2-BC8D-E349A6E6C586}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{173D3DCC-6CCB-4EE2-BC8D-E349A6E6C586}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{173D3DCC-6CCB-4EE2-BC8D-E349A6E6C586}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{173D3DCC-6CCB-4EE2-BC8D-E349A6E6C586}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E66D9CCF-59E9-4D96-B407-5F26FA0AC74C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E66D9CCF-59E9-4D96-B407-5F26FA0AC74C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E66D9CCF-59E9-4D96-B407-5F26FA0AC74C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -38,18 +43,19 @@ Global
 		{6544461F-50B7-43A8-A173-D47B9C389D53}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6544461F-50B7-43A8-A173-D47B9C389D53}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6544461F-50B7-43A8-A173-D47B9C389D53}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CB16622A-1236-4726-A88F-36CC4E1ED326}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CB16622A-1236-4726-A88F-36CC4E1ED326}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CB16622A-1236-4726-A88F-36CC4E1ED326}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CB16622A-1236-4726-A88F-36CC4E1ED326}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93716B22-B79C-482C-BABA-F8A7874758BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93716B22-B79C-482C-BABA-F8A7874758BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93716B22-B79C-482C-BABA-F8A7874758BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93716B22-B79C-482C-BABA-F8A7874758BC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{780C55ED-49EB-4865-9533-42338F442136} = {C20B33E4-5D24-47CC-973A-422C09B7F2B9}
+		{173D3DCC-6CCB-4EE2-BC8D-E349A6E6C586} = {C20B33E4-5D24-47CC-973A-422C09B7F2B9}
 		{E66D9CCF-59E9-4D96-B407-5F26FA0AC74C} = {C20B33E4-5D24-47CC-973A-422C09B7F2B9}
 		{6544461F-50B7-43A8-A173-D47B9C389D53} = {C20B33E4-5D24-47CC-973A-422C09B7F2B9}
-		{CB16622A-1236-4726-A88F-36CC4E1ED326} = {C4357423-3025-468C-9997-FC464241C661}
+		{93716B22-B79C-482C-BABA-F8A7874758BC} = {C20B33E4-5D24-47CC-973A-422C09B7F2B9}
 	EndGlobalSection
 EndGlobal

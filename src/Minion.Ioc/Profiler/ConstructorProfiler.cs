@@ -8,6 +8,7 @@ using Minion.Ioc.Models;
 using System.Linq.Expressions;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using Minion.Ioc.Aspects;
 
 [assembly: InternalsVisibleTo("Minion.Tests")]
 
@@ -15,6 +16,12 @@ namespace Minion.Ioc.Profiler
 {
     public class ConstructorProfiler : IConstructorProfile
     {
+        private readonly ITypeCache _cache;
+
+        public ConstructorProfiler(ITypeCache cache)
+        {
+            _cache = cache;
+        }
 
         public ConstructorDefinition GetTargetConstructor(Type contract,
             Type concrete)
@@ -31,7 +38,9 @@ namespace Minion.Ioc.Profiler
                     "Constructor parameters must be a public class and cannot be an enum, optional, or sealed");
             }
 
-           var constructor = ConstructorEmitter.Emit(target, optimal);
+            ConvertConstructor(concrete, optimal);
+
+            var constructor = ConstructorEmitter.Emit(target, optimal);
             var output = new ConstructorDefinition(optimal.Parameters, constructor);
 
             return output;
@@ -93,6 +102,12 @@ namespace Minion.Ioc.Profiler
             }
 
             return output;
+        }
+
+        private void ConvertConstructor(Type concrete, IParameterProfile profile)
+        {
+            concrete = _cache.GetType(concrete, profile.Ctor);
+            profile.Ctor = concrete.GetConstructors().First();
         }
     }
 }

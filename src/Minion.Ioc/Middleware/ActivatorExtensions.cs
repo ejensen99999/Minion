@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -10,29 +9,27 @@ using Microsoft.AspNetCore.Mvc.ViewComponents;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.OptionsModel;
-using Minion.Ioc.Profiler;
+using Microsoft.Extensions.Options;
 
 namespace Minion.Ioc.Middleware
 {
     public static class ActivatorExtensions
     {
-        public static ILogger GetLog(this Container container)
-        {
-            var log = container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
+        private static string _containerName;
 
-            return log;
-        }
-
-        public static IServiceCollection AddMinionActivator(this IServiceCollection services, Container container)
+        public static Container AddMinionIocActivator(this IServiceCollection services, string containerName = null)
         {
+            _containerName = containerName;
+            var container = ContainerManager.GetContainer(_containerName);
             var activator = new MinionIocActivator(container);
             services.AddSingleton<IControllerActivator>(activator);
             services.AddSingleton<IViewComponentActivator>(activator);
 
             container.Populate(services);
+            container.RegisterMvcControllers();
+            container.RegisterMvcViewComponents();
 
-            return services;
+            return container;
         }
 
         public static Container AddConfiguration<TConfigure>(this Container container, IConfigurationRoot configuration)
@@ -42,28 +39,75 @@ namespace Minion.Ioc.Middleware
             var settings = new TConfigure();
             var config = new ConfigureFromConfigurationOptions<TConfigure>(section);
 
-            config.Configure(settings);
-
-            container.AddSingleton(settings);
+            container.AddTransient(x =>
+            {
+                config.Configure(settings);
+                return settings;
+            });
 
             return container;
         }
 
-        public static Container RegisterComponents(this Container container, IApplicationBuilder applicationBuilder)
+        public static Container Container(this IApplicationBuilder app)
         {
-            container.RegisterMvcControllers(applicationBuilder);
-            container.RegisterMvcViewComponents(applicationBuilder);
+            return ContainerManager.GetContainer(_containerName);
+        }
+
+        public static ILogger GetLog(this Container container)
+        {
+            var log = container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
+
+            return log;
+        }
+
+        public static Container Populate(this Container container, IServiceCollection services)
+        {
+            var profiler = container.Profiler;
+            var serviceProvider = services.BuildServiceProvider();
+            ILogger log = null;
+
+            foreach (var service in services)
+            {
+                try
+                {
+                    var serviceType = service.ServiceType;
+                    var instance = service.ImplementationInstance;
+                    var instanceType = instance == null ? typeof(Nullable) : instance.GetType();
+                    var lifetime = service.Lifetime.ToLifetime();
+
+
+                    if (service.ImplementationType != null)
+                    {
+                        profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
+                            x => serviceProvider.GetService(serviceType));
+                    }
+                    else if (service.ImplementationFactory != null)
+                    {
+                        profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
+                            x => service.ImplementationFactory(x));
+                    }
+                    else
+                    {
+                        profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
+                            x => service.ImplementationInstance);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log = log ?? container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
+                    log?.LogError("Populate method found an issue with a registration", ex);
+                }
+            }
 
             return container;
         }
 
-        public static void RegisterMvcControllers(this Container container, IApplicationBuilder applicationBuilder)
+        public static void RegisterMvcControllers(this Container container)
         {
             try
             {
                 var controllerFeature = new ControllerFeature();
-                var requiredService = ServiceProviderServiceExtensions
-                    .GetRequiredService<ApplicationPartManager>(applicationBuilder.ApplicationServices);
+                var requiredService = container.Get<ApplicationPartManager>();
 
                 requiredService.PopulateFeature(controllerFeature);
 
@@ -77,13 +121,11 @@ namespace Minion.Ioc.Middleware
             }
         }
 
-        public static void RegisterMvcViewComponents(this Container container,
-            IApplicationBuilder applicationBuilder)
+        public static void RegisterMvcViewComponents(this Container container)
         {
             try
             {
-                var service = ServiceProviderServiceExtensions
-                    .GetService<IViewComponentDescriptorProvider>(applicationBuilder.ApplicationServices);
+                var service = container.Get<IViewComponentDescriptorProvider>();
 
                 if (service == null)
                 {
@@ -116,61 +158,10 @@ namespace Minion.Ioc.Middleware
             }
         }
 
-        public static Container Populate(this Container container, IServiceCollection services)
+        public static IApplicationBuilder UseMinionThreadedIoc(this IApplicationBuilder app)
         {
-            var profiler = container.Profiler;
-
-            foreach (var service in services)
-            {
-                try
-                {
-                    var serviceType = service.ServiceType;
-                    var instance = service.ImplementationInstance;
-                    var instanceType = instance == null ? typeof(Nullable) : instance.GetType();
-                    var lifetime = service.Lifetime.ToLifetime();
-
-                    var serviceProvider = services.BuildServiceProvider();
-
-
-                    if (service.ImplementationType != null)
-                    {
-                        if (IntrospectionExtensions.GetTypeInfo(service.ServiceType)
-                            .IsGenericType)
-                        {
-                            profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
-                                x => serviceProvider.GetService(serviceType));
-                        }
-                    }
-                    else if (service.ImplementationFactory != null)
-                    {
-                        profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
-                            x => service.ImplementationFactory(x));
-                    }
-                    else if (instanceType.InheritsFrom(serviceType))
-                    {
-                        profiler.SetMapping(serviceType, service.ImplementationType, lifetime,
-                            x => service.ImplementationInstance);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    var log = container.Get<ILoggerFactory>()?.CreateLogger("ActivatorExtensions");
-                    log?.LogError("Populate method found an issue with a registration", ex);
-                }
-            }
-
-            return container;
-        }
-
-        public static bool InheritsFrom(this Type obj1, Type obj2)
-        {
-            bool output;
-
-            var info1 = obj1.GetTypeInfo();
-
-            output = info1.ImplementedInterfaces.Contains(obj2);
-
-            return output;
+            var container = ContainerManager.GetContainer(_containerName);
+            return app.UseMiddleware<MinionIocTheadAsyncMiddleware>(container);
         }
     }
 }
