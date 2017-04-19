@@ -40,7 +40,6 @@ namespace Minion.Ioc.Builders
                 }
                 else if (contractInfo.IsGenericType)
                 {
-                    var t = 0;
                     var genArgs = contractInfo.GetGenericArguments();
                     var txt = string.Join(", ", genArgs.Select(x => x.AssemblyQualifiedName));
                     var ass = contractInfo.AssemblyQualifiedName;

@@ -17,4 +17,4 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("e66d9ccf-59e9-4d96-b407-5f26fa0ac74c")]
-[assembly: InternalsVisibleTo("Minion.Test")]
+[assembly: InternalsVisibleTo("Minion.Ioc.Tests")]

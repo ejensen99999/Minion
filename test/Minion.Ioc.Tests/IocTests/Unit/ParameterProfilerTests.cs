@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Minion.Ioc.Interfaces;
+using Minion.Ioc.Profiler;
 using Minion.Tests.AssortedTestClasses;
 using Xunit;
-using Minion.Ioc.Profiler;
 
 namespace Minion.Tests.IocTests.Unit
 {
