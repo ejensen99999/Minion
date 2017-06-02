@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Minion.Configuration;
 using Minion.Ioc;
 using Minion.Ioc.Middleware;
@@ -54,7 +55,7 @@ namespace Minion.Web
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app,
             IHostingEnvironment env,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory, IOptionsMonitor<Settings> monitor)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
@@ -62,6 +63,14 @@ namespace Minion.Web
             app
                 .UseMinionThreadedIoc()
                 .UseMvc();
+
+            monitor.OnChange(
+                vals =>
+                {
+                    loggerFactory
+                        .CreateLogger<IOptionsMonitor<Settings>>()
+                        .LogDebug($"Config changed: {string.Join(", ", vals)}");
+                });
         }
     }
 }

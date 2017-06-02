@@ -9,7 +9,7 @@ using Minion.Ioc.Models;
 
 namespace Minion.Ioc.Profiler
 {
-    public class ParameterProfiler : IParameterProfile
+    public class ParameterProfile : IParameterProfile
     {
         public ConstructorInfo Ctor { get; set; }
 
@@ -19,7 +19,7 @@ namespace Minion.Ioc.Profiler
 
         public bool IsValid { get; private set; } = true;
 
-        public ParameterProfiler(ConstructorInfo ctor)
+        public ParameterProfile(ConstructorInfo ctor)
         {
             Ctor = ctor;
             Parameters = GetConstructorSignature(ctor);

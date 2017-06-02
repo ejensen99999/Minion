@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Minion.Web.Models;
 using Minion.Web.TestObjs;
+using Microsoft.Extensions.Options;
 
 namespace Minion.Web.Controllers
 {

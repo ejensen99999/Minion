@@ -41,7 +41,7 @@ namespace Minion.Tests.IocTests.Unit
                 .GetTypeInfo()
                 .GetConstructors();
 
-            return new ParameterProfiler(ctors[0]);
+            return new ParameterProfile(ctors[0]);
         }
 
         private IParameterProfile get_base_tests(int paramCount)
@@ -123,7 +123,7 @@ namespace Minion.Tests.IocTests.Unit
         {
             var target = typeof(List<string>).GetTypeInfo();
 
-            var actual = ParameterProfiler.HasDefaultConstructor(target);
+            var actual = ParameterProfile.HasDefaultConstructor(target);
 
             Assert.True(actual);
         }
@@ -133,7 +133,7 @@ namespace Minion.Tests.IocTests.Unit
         {
             var target = typeof(NoDefaultConstructor).GetTypeInfo();
 
-            var actual = ParameterProfiler.HasDefaultConstructor(target);
+            var actual = ParameterProfile.HasDefaultConstructor(target);
 
             Assert.False(actual);
         }
@@ -144,7 +144,7 @@ namespace Minion.Tests.IocTests.Unit
             var target = typeof(ClockEvent);
 
             TypeInfo info;
-            var actual = ParameterProfiler.IsAcceptableParameter(target, out info);
+            var actual = ParameterProfile.IsAcceptableParameter(target, out info);
 
             Assert.True(actual);
         }
@@ -155,7 +155,7 @@ namespace Minion.Tests.IocTests.Unit
             var target = typeof(IClockEvent);
 
             TypeInfo info;
-            var actual = ParameterProfiler.IsAcceptableParameter(target, out info);
+            var actual = ParameterProfile.IsAcceptableParameter(target, out info);
 
             Assert.True(actual);
         }
@@ -166,7 +166,7 @@ namespace Minion.Tests.IocTests.Unit
             var target = typeof(ServiceLifetime);
 
             TypeInfo info;
-            var actual = ParameterProfiler.IsAcceptableParameter(target, out info);
+            var actual = ParameterProfile.IsAcceptableParameter(target, out info);
 
             Assert.False(actual);
         }
@@ -177,7 +177,7 @@ namespace Minion.Tests.IocTests.Unit
             var target = typeof(int);
 
             TypeInfo info;
-            var actual = ParameterProfiler.IsAcceptableParameter(target, out info);
+            var actual = ParameterProfile.IsAcceptableParameter(target, out info);
 
             Assert.False(actual);
         }

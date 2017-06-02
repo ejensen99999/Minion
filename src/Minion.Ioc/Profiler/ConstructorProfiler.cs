@@ -77,12 +77,12 @@ namespace Minion.Ioc.Profiler
                 if (ctor.GetCustomAttribute<PreferredConstructorAttribute>() != null)
                 {
                     output.Clear();
-                    output.Add(new ParameterProfiler(ctor));
+                    output.Add(new ParameterProfile(ctor));
                     break;
                 }
                 else
                 {
-                    output.Add(new ParameterProfiler(ctor));
+                    output.Add(new ParameterProfile(ctor));
                 }
             }
 
