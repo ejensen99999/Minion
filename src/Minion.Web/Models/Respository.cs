@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Minion.Ioc;
+
 using Minion.Web.TestObjs;
-using Minion.Ioc.Aspects;
+
 using Microsoft.Extensions.Options;
+using Minion.Inject;
 
 namespace Minion.Web.Models
 {
@@ -17,8 +18,8 @@ namespace Minion.Web.Models
 
     public class Respository
         : BaseRepository<Respository>,
-            IRespository,
-            IAspect
+            IRespository//,
+            //IAspect
     {
         private readonly Settings _settings;
         private readonly ITest _test;
@@ -36,8 +37,8 @@ namespace Minion.Web.Models
             _test.Id = container.ContextId;
         }
 
-        [MyMethodAspect(1)]
-        [MyMethodAspect2(2)]
+        //[MyMethodAspect(1)]
+        //[MyMethodAspect2(2)]
         public virtual string GetId()
         {
             return _test.Id.ToString();

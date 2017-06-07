@@ -5,8 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Minion.Configuration;
-using Minion.Ioc;
-using Minion.Ioc.Middleware;
+using Minion.Inject;
+using Minion.Inject.Middleware;
 using Minion.Web.Models;
 using Minion.Web.TestObjs;
 using System;
@@ -34,7 +34,7 @@ namespace Minion.Web
             services.AddMvc();
             services
                 .AddDistributedMemoryCache()
-                .AddMinionIocActivator()
+                .AddMinionInject()
                 .AddConfiguration<Settings>(Configuration)
                 .AddConfiguration<ActiveDirectorySettings>(Configuration)
                 .AddConfiguration<BusSettings>(Configuration)
@@ -49,7 +49,7 @@ namespace Minion.Web
                 .AddSingleton<ICoreConfiguration, CoreConfiguration>()
                 .AddTransient<IBusinessLogic, BusinessLogic>()
                 .AddTransient<IRespository, Respository>()
-                .AddThreadAsync<ITest, Test>();
+                .AddScoped<ITest, Test>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -61,7 +61,7 @@ namespace Minion.Web
             loggerFactory.AddDebug();
 
             app
-                .UseMinionThreadedIoc()
+                .UseMinionInject()
                 .UseMvc();
 
             monitor.OnChange(
