@@ -1,8 +1,4 @@
-﻿using Minion.Ioc.Aspects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Minion.Inject.Aspects;
 
 namespace Minion.Web.TestObjs
 {
