@@ -17,7 +17,20 @@ namespace Minion.Inject
 		private readonly AsyncLocal<Guid> _contextId;
 		private readonly IProfiler _profiler;
 
-		public Guid ContextId
+		private void AddBuilder(Type contract,
+			Type concrete,
+			ServiceLifetime lifeCycle,
+			Func<Container, dynamic> initializer,
+			dynamic instance)
+		{
+			var ctor = _profiler.GetOptimalConstructor(concrete);
+			var profile = new Profile(contract, concrete, lifeCycle, ctor, initializer, instance);
+			var builder = _profiler.GetTypeBuilder(profile, lifeCycle);
+
+			_builders.TryAdd(contract, builder);
+		}
+
+        public Guid ContextId
 		{
 			get { return _contextId.Value; }
 		}
@@ -45,19 +58,6 @@ namespace Minion.Inject
 				throw new IocRegistrationException(
 					$"Type {contract.FullName}: has already been registered with this Ioc container");
 			}
-		}
-
-		private void AddBuilder(Type contract,
-			Type concrete,
-			ServiceLifetime lifeCycle,
-			Func<Container, dynamic> initializer,
-			dynamic instance)
-		{
-			var ctor = _profiler.GetOptimalConstructor(concrete);
-			var profile = new Profile(contract, concrete, lifeCycle, ctor, initializer, instance);
-			var builder = _profiler.GetTypeBuilder(profile, lifeCycle);
-
-			_builders.TryAdd(contract, builder);
 		}
 
 		public object GetService(Type serviceType)

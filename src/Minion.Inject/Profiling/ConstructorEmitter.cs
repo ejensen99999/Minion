@@ -3,16 +3,32 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using Minion.Inject.Interfaces;
+using Minion.Inject.Aspects;
+using System.Linq;
 
 namespace Minion.Inject.Profiling
 {
     public class ConstructorEmitter
 	{
 		private const string ModuleName = "Minion.Inject.Constructors.dll";
+	    private static readonly IEmitter _aspectEmitter;
 
-		public static IConstructor Emit(Type concrete, ConstructorInfo ctor, List<Type> parameters)
+	    static ConstructorEmitter()
+	    {
+	        _aspectEmitter = new AspectEmitter();
+	    }
+
+	    public static IConstructor Emit(Type concrete, ConstructorInfo ctor, List<Type> parameters)
 		{
-			var assemblyType = "IocConstructor";
+		    if (concrete.InheritsFrom(typeof(IAspect)))
+		    {
+		        concrete = _aspectEmitter.GenerateType(concrete, ctor);
+		        ctor = concrete
+                    .GetConstructors()
+		            .First();
+		    }
+
+		    var assemblyType = "IocConstructor";
 
 			var assemblyName = new AssemblyName{ Name = $"{concrete.FullName}.{assemblyType}" };
 			var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
@@ -31,6 +47,7 @@ namespace Minion.Inject.Profiling
 
 			var targetType = typeBuilder.CreateTypeInfo();
 			var target = (IConstructor) Activator.CreateInstance(targetType.AsType());
+
 			return target;
 		}
 
@@ -81,5 +98,5 @@ namespace Minion.Inject.Profiling
 			methodIl.Emit(OpCodes.Ldloc_S, output);
 			methodIl.Emit(OpCodes.Ret);
 		}
-	}
+    }
 }
