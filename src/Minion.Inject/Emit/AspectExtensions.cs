@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Text;
+using Minion.Inject.Aspects;
 
-namespace Minion.Inject.Aspects
+namespace Minion.Inject.Emit
 {
     public static class AspectExtensions
     {
+        //Do Not Remove!!! Necessary for the aspect to call after it's generated!!
         public static AspectEventContext CreateAspectContext(object callerReference,
             string memberName = "")
         {

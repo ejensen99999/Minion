@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Minion.Inject.Interfaces;
 using Minion.Inject.Aspects;
-using System.Linq;
-using Minion.Inject.Emit;
+using Minion.Inject.Interfaces;
 
-namespace Minion.Inject.Profiling
+namespace Minion.Inject.Emit
 {
     public class ConstructorEmitter
 	{
@@ -19,8 +18,13 @@ namespace Minion.Inject.Profiling
 	        _aspectEmitter = new AspectEmitter();
 	    }
 
-	    public static IConstructor Emit(Type concrete, ConstructorInfo ctor, List<Type> parameters)
+	    public static IConstructor Emit(Type concrete, ConstructorInfo ctor, IEnumerable<Type> parameters)
 		{
+		    if (concrete == null)
+		    {
+                return null;
+		    }
+
 		    if (concrete.InheritsFrom(typeof(IAspect)))
 		    {
 		        concrete = _aspectEmitter.CreateAspectProxyType(concrete, ctor);
@@ -43,8 +47,7 @@ namespace Minion.Inject.Profiling
 			var typeBuilder = modBuilder.DefineType(assemblyType, typeAttr);
 			typeBuilder.AddInterfaceImplementation(typeof(IConstructor));
 
-			GenerateConstructor(typeBuilder);
-			GenerateConstruct(ctor, typeBuilder, parameters);
+			GenerateConstructor(ctor, typeBuilder, parameters.ToList());
 
 			var targetType = typeBuilder.CreateTypeInfo();
 			var target = (IConstructor) Activator.CreateInstance(targetType.AsType());
@@ -52,19 +55,16 @@ namespace Minion.Inject.Profiling
 			return target;
 		}
 
-		private static void GenerateConstructor(TypeBuilder builder)
+		private static void GenerateConstructor(ConstructorInfo ctor, TypeBuilder builder, List<Type> parameterTypes)
 		{
-			var methodAtts = MethodAttributes.Public
+			var ctorAtts = MethodAttributes.Public
 				| MethodAttributes.HideBySig
 				| MethodAttributes.SpecialName
 				| MethodAttributes.RTSpecialName;
 
-			builder.DefineDefaultConstructor(methodAtts);
-		}
+			builder.DefineDefaultConstructor(ctorAtts);
 
-		private static void GenerateConstruct(ConstructorInfo ctor, TypeBuilder builder, List<Type> parameterTypes)
-		{
-			var methodAtts = MethodAttributes.Public 
+            var methodAtts = MethodAttributes.Public 
 				| MethodAttributes.Virtual 
 				| MethodAttributes.HideBySig 
 				| MethodAttributes.NewSlot;
@@ -83,7 +83,7 @@ namespace Minion.Inject.Profiling
 
 			methodIl.Emit(OpCodes.Nop);
 
-			for (var i = 0; i < parameterTypes.Count; i++)
+			for (var i = 0; i < parameterTypes.Count(); i++)
 			{
 				methodIl.Emit(OpCodes.Ldarg_1);
 				methodIl.Emit(OpCodes.Ldc_I4, i);

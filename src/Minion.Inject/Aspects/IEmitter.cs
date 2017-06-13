@@ -5,10 +5,10 @@ namespace Minion.Inject.Aspects
 {
      public interface IEmitter
      {
-          Type GenerateType<T>(ConstructorInfo ctor = null)
+          Type CreateAspectProxyType<T>(ConstructorInfo ctor = null)
                where T : class;
 
-          Type GenerateType(Type baseType,
+          Type CreateAspectProxyType(Type baseType,
                ConstructorInfo ctor = null);
      }
 }

@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Minion.Inject.Aspects;
 
-namespace Minion.Inject.Aspects
+namespace Minion.Inject.Emit
 {
     public class AspectEmitter : IEmitter
     {
@@ -19,13 +20,13 @@ namespace Minion.Inject.Aspects
             _modBuilder = assemblyBuilder.DefineDynamicModule(MODULE_NAME);
         }
 
-        public Type GenerateType<T>(ConstructorInfo ctor = null)
+        public Type CreateAspectProxyType<T>(ConstructorInfo ctor = null)
           where T : class
         {
-            return GenerateType(typeof(T), ctor);
+            return CreateAspectProxyType(typeof(T), ctor);
         }
 
-        public Type GenerateType(Type baseType, ConstructorInfo ctor = null)
+        public Type CreateAspectProxyType(Type baseType, ConstructorInfo ctor = null)
         {
             var baseInfo = baseType.GetTypeInfo();
 
@@ -36,19 +37,18 @@ namespace Minion.Inject.Aspects
 
             var typeAttr = TypeAttributes.Class | TypeAttributes.Public;
             var typeBuilder = _modBuilder.DefineType(baseType.FullName + DECORATOR, typeAttr, baseType);
-            typeBuilder.AddInterfaceImplementation(typeof(IAspect));
 
             if (ctor == null)
             {
-                GenConstuctors(baseType, typeBuilder);
+                GenerateProxyConstructors(baseType, typeBuilder);
             }
             else
             {
-                GenConstructor(typeBuilder, ctor);
+                GenerateProxyConstructor(typeBuilder, ctor);
             }
 
-            GenProperties(baseType, typeBuilder);
-            GenMethods(baseType, typeBuilder);
+            GenerateProxyProperties(baseType, typeBuilder);
+            GenerateProxyMethods(baseType, typeBuilder);
 
             var targetType = typeBuilder.CreateTypeInfo();
 
@@ -56,7 +56,8 @@ namespace Minion.Inject.Aspects
 
         }
 
-        private void GenConstructor(TypeBuilder builder,
+        // Creates the targeted contructor for the IOC proxy
+        private void GenerateProxyConstructor(TypeBuilder builder,
              ConstructorInfo ctor)
         {
             var parameters = ctor.GetParameters();
@@ -77,15 +78,17 @@ namespace Minion.Inject.Aspects
             ctorIl.Emit(OpCodes.Ret);
         }
 
-        private void GenConstuctors(Type baseType, TypeBuilder builder)
+        // Creates the constructors for the proxy
+        private void GenerateProxyConstructors(Type baseType, TypeBuilder builder)
         {
             foreach (var constructor in baseType.GetConstructors(BindingFlags.Default | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance))
             {
-                GenConstructor(builder, constructor);
+                GenerateProxyConstructor(builder, constructor);
             }
         }
 
-        private void GenProperties(Type baseType, TypeBuilder typeBuilder, IEnumerable<PropertyInfo> properties = null)
+        // Creates the property overrides for the proxy
+        private void GenerateProxyProperties(Type baseType, TypeBuilder typeBuilder, IEnumerable<PropertyInfo> properties = null)
         {
             var getSetAttr = MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Virtual | MethodAttributes.Final;
 
@@ -134,7 +137,8 @@ namespace Minion.Inject.Aspects
             }
         }
 
-        private void GenMethods(Type baseType, TypeBuilder builder)
+        // Creates the method overrides for the proxy
+        private void GenerateProxyMethods(Type baseType, TypeBuilder builder)
         {
             var methods = baseType.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
 
@@ -161,6 +165,7 @@ namespace Minion.Inject.Aspects
             }
         }
 
+        // Passes values defined in the attribute (aspect) constructor. Must be base types defined at compile time
         private void EmitAspectObjects(ILGenerator emitIl, CustomAttributeContainer[] attributes)
         {
             var len = attributes.Count();
@@ -192,6 +197,16 @@ namespace Minion.Inject.Aspects
             }
         }
 
+        // Creates injection of event parameters into each aspect event
+        private void EmitEventParameters(ILGenerator emitIl, string name, LocalBuilder context)
+        {
+            emitIl.Emit(OpCodes.Ldarg_0);
+            emitIl.Emit(OpCodes.Ldstr, name);
+            emitIl.EmitCall(OpCodes.Call, typeof(AspectExtensions).GetMethod("CreateAspectContext", BindingFlags.Public | BindingFlags.Static), new Type[] { typeof(object), typeof(string) });
+            emitIl.Emit(OpCodes.Stloc, context);
+        }
+        
+        // Creates block wrapping the execution and return events
         private void EmitOnMethodExecution(ILGenerator emitIl, Type baseType, MethodInfo method, CustomAttributeContainer[] attributes, CustomParameterInfo[] parameters)
         {
             var index = new StackIndex();
@@ -209,6 +224,7 @@ namespace Minion.Inject.Aspects
             emitIl.Emit(OpCodes.Ret);
         }
 
+        // Creates call the the executed event
         private void EmitOnMethodExecuted(ILGenerator emitIl, StackIndex index, CustomAttributeContainer[] attributes, CustomParameterInfo[] parameters)
         {
             var len = attributes.Length;
@@ -241,155 +257,7 @@ namespace Minion.Inject.Aspects
             }
         }
 
-        private void EmitOnMethodReturning(AspectAction action, ILGenerator emitIl, StackIndex index, Type returnType, CustomAttributeContainer[] attributes)
-        {
-            var len = attributes.Length;
-            var returnInfo = returnType.GetTypeInfo();
-
-            for (var i = 0; i < len; i++)
-            {
-                emitIl.Emit(OpCodes.Ldloc_S, i);
-                emitIl.Emit(OpCodes.Ldloc_S, index.Context);
-                emitIl.Emit(OpCodes.Ldloc_S, index.Output);
-
-
-                if (returnInfo.IsValueType)
-                {
-                    //not reference
-                    emitIl.Emit(OpCodes.Box, returnType);
-                }
-
-                emitIl.EmitCall(OpCodes.Callvirt, typeof(BaseAspect).GetMethod(action.ToString()), new Type[] { typeof(AspectEventContext), returnType });
-
-                if (returnInfo.IsValueType)
-                {
-                    //not reference
-                    emitIl.Emit(OpCodes.Unbox_Any, returnType);
-                }
-
-                emitIl.Emit(OpCodes.Stloc_S, index.Output);
-                emitIl.Emit(OpCodes.Nop);
-            }
-        }
-
-        private void EmitOnMethodReturned(ILGenerator emitIl, StackIndex index, Type returnType, CustomAttributeContainer[] attributes)
-        {
-            var len = attributes.Length;
-            var returnInfo = returnType.GetTypeInfo();
-
-            for (var i = 0; i < len; i++)
-            {
-                emitIl.Emit(OpCodes.Ldloc_S, i);
-                emitIl.Emit(OpCodes.Ldloc_S, index.Context);
-                emitIl.Emit(OpCodes.Ldloc_S, index.Output);
-
-                if (returnInfo.IsValueType) //not reference
-                    emitIl.Emit(OpCodes.Box, returnType);
-
-                emitIl.EmitCall(OpCodes.Callvirt, typeof(BaseAspect).GetMethod("OnMethodReturned"), new Type[] { returnType });
-                emitIl.Emit(OpCodes.Nop);
-            }
-        }
-
-        private void EmitOnPropertySetting(ILGenerator emitIl, Type baseType, Type propertyType, string propertyName, CustomAttributeContainer[] attributes, CustomParameterInfo[] parameters)
-        {
-            var index = new StackIndex();
-
-            EmitAspectObjects(emitIl, attributes);
-            EmitAspectSetterInterception(emitIl, index, baseType.GetMethod(propertyName), propertyName, new Type[] { propertyType }, attributes, parameters);
-
-            emitIl.Emit(OpCodes.Ret);
-        }
-
-        private void EmitOnPropertyGetting(ILGenerator emitIl, Type baseType, Type propertyType, string propertyName, CustomAttributeContainer[] attributes)
-        {
-            var index = new StackIndex();
-
-            EmitAspectObjects(emitIl, attributes);
-
-            index.Store = index.Output = emitIl.DeclareLocal(propertyType);
-            index.Context = emitIl.DeclareLocal(typeof(AspectEventContext));
-
-            EmitEventParameters(emitIl, propertyName, index.Context);
-
-            emitIl.Emit(OpCodes.Ldarg_0);
-            emitIl.EmitCall(OpCodes.Call, baseType.GetMethod(propertyName), null);
-            emitIl.Emit(OpCodes.Stloc_S, index.Store);
-
-            EmitOnMethodReturning(AspectAction.OnPropertyGetting, emitIl, index, propertyType, attributes);
-
-            emitIl.Emit(OpCodes.Ldloc_S, index.Output);
-            emitIl.Emit(OpCodes.Ret);
-        }
-
-        private void EmitAspectSetterInterception(ILGenerator emitIl, StackIndex index, MethodInfo method, string methodName, Type[] types, CustomAttributeContainer[] attributes, CustomParameterInfo[] parameters)
-        {
-            var len = attributes.Length;
-            var setterType = parameters.First().ParameterType;
-            var setterInfo = setterType.GetTypeInfo();
-
-            var trueLabel = emitIl.DefineLabel();
-            var falseLabel = emitIl.DefineLabel();
-            var endLabel = emitIl.DefineLabel();
-
-            index.Context = emitIl.DeclareLocal(typeof(AspectEventContext));
-            index.Store = emitIl.DeclareLocal(typeof(bool));
-
-            EmitEventParameters(emitIl, methodName, index.Context);
-
-            for (var i = 0; i < len; i++)
-            {
-                emitIl.Emit(OpCodes.Ldloc, i);
-                emitIl.Emit(OpCodes.Ldloc, index.Context);
-                emitIl.Emit(OpCodes.Ldarg, 1);
-
-                if (setterInfo.IsValueType) //not reference
-                {
-                    emitIl.Emit(OpCodes.Box, setterType);
-                }
-
-                emitIl.EmitCall(OpCodes.Callvirt, typeof(BaseAspect).GetMethod("OnPropertySetting"), new Type[] { typeof(AspectEventContext), typeof(object) });
-
-                if (len > 1)
-                {
-                    if (i < len - 1)
-                    {
-                        emitIl.Emit(OpCodes.Brfalse, falseLabel);
-                    }
-                    else
-                    {
-                        emitIl.Emit(OpCodes.Ldc_I4_0);
-                        emitIl.Emit(OpCodes.Ceq);
-                        emitIl.Emit(OpCodes.Br, trueLabel);
-                    }
-                }
-                else
-                {
-                    emitIl.Emit(OpCodes.Ldc_I4_0);
-                    emitIl.Emit(OpCodes.Ceq);
-                }
-            }
-
-            if (len > 1)
-            {
-                emitIl.MarkLabel(falseLabel);
-                emitIl.Emit(OpCodes.Ldc_I4_1);
-                emitIl.MarkLabel(trueLabel);
-            }
-
-            emitIl.Emit(OpCodes.Stloc, index.Store);
-            emitIl.Emit(OpCodes.Ldloc, index.Store);
-            emitIl.Emit(OpCodes.Brtrue, endLabel);
-            emitIl.Emit(OpCodes.Nop);
-
-            emitIl.Emit(OpCodes.Ldarg_0);
-            emitIl.Emit(OpCodes.Ldarg_1);
-            emitIl.EmitCall(OpCodes.Call, method, types);
-
-            emitIl.Emit(OpCodes.Nop);
-            emitIl.MarkLabel(endLabel);
-        }
-
+        // Creates the "AND" condition test that all executing aspects must return true from for root method execution
         private void EmitAspectMethodInterception(ILGenerator emitIl, StackIndex index, MethodInfo method, Type[] types, CustomAttributeContainer[] attributes, CustomParameterInfo[] parameters)
         {
             var paramCount = parameters.Length;
@@ -503,12 +371,155 @@ namespace Minion.Inject.Aspects
             emitIl.MarkLabel(endLabel);
         }
 
-        private void EmitEventParameters(ILGenerator emitIl, string name, LocalBuilder context)
+        // Creates call the the returning event
+        private void EmitOnMethodReturning(AspectAction action, ILGenerator emitIl, StackIndex index, Type returnType, CustomAttributeContainer[] attributes)
         {
+            var len = attributes.Length;
+            var returnInfo = returnType.GetTypeInfo();
+
+            for (var i = 0; i < len; i++)
+            {
+                emitIl.Emit(OpCodes.Ldloc_S, i);
+                emitIl.Emit(OpCodes.Ldloc_S, index.Context);
+                emitIl.Emit(OpCodes.Ldloc_S, index.Output);
+
+                if (returnInfo.IsValueType)
+                {
+                    emitIl.Emit(OpCodes.Box, returnType);
+                }
+
+                emitIl.EmitCall(OpCodes.Callvirt, typeof(BaseAspect).GetMethod(action.ToString()), new Type[] { typeof(AspectEventContext), returnType });
+
+                if (returnInfo.IsValueType)
+                {
+                    emitIl.Emit(OpCodes.Unbox_Any, returnType);
+                }
+
+                emitIl.Emit(OpCodes.Stloc_S, index.Output);
+                emitIl.Emit(OpCodes.Nop);
+            }
+        }
+
+        // Creates call the the returned event
+        private void EmitOnMethodReturned(ILGenerator emitIl, StackIndex index, Type returnType, CustomAttributeContainer[] attributes)
+        {
+            var len = attributes.Length;
+            var returnInfo = returnType.GetTypeInfo();
+
+            for (var i = 0; i < len; i++)
+            {
+                emitIl.Emit(OpCodes.Ldloc_S, i);
+                emitIl.Emit(OpCodes.Ldloc_S, index.Context);
+                emitIl.Emit(OpCodes.Ldloc_S, index.Output);
+
+                if (returnInfo.IsValueType) //not reference
+                    emitIl.Emit(OpCodes.Box, returnType);
+
+                emitIl.EmitCall(OpCodes.Callvirt, typeof(BaseAspect).GetMethod("OnMethodReturned"), new Type[] { returnType });
+                emitIl.Emit(OpCodes.Nop);
+            }
+        }
+
+        // Creates block wrapping the setter execution
+        private void EmitOnPropertySetting(ILGenerator emitIl, Type baseType, Type propertyType, string propertyName, CustomAttributeContainer[] attributes, CustomParameterInfo[] parameters)
+        {
+            var index = new StackIndex();
+
+            EmitAspectObjects(emitIl, attributes);
+            EmitAspectSetterInterception(emitIl, index, baseType.GetMethod(propertyName), propertyName, new Type[] { propertyType }, attributes, parameters);
+
+            emitIl.Emit(OpCodes.Ret);
+        }
+
+        // Creates the "AND" condition test that all executing aspects must return true from for root property setter execution
+        private void EmitAspectSetterInterception(ILGenerator emitIl, StackIndex index, MethodInfo method, string methodName, Type[] types, CustomAttributeContainer[] attributes, CustomParameterInfo[] parameters)
+        {
+            var len = attributes.Length;
+            var setterType = parameters.First().ParameterType;
+            var setterInfo = setterType.GetTypeInfo();
+
+            var trueLabel = emitIl.DefineLabel();
+            var falseLabel = emitIl.DefineLabel();
+            var endLabel = emitIl.DefineLabel();
+
+            index.Context = emitIl.DeclareLocal(typeof(AspectEventContext));
+            index.Store = emitIl.DeclareLocal(typeof(bool));
+
+            EmitEventParameters(emitIl, methodName, index.Context);
+
+            for (var i = 0; i < len; i++)
+            {
+                emitIl.Emit(OpCodes.Ldloc, i);
+                emitIl.Emit(OpCodes.Ldloc, index.Context);
+                emitIl.Emit(OpCodes.Ldarg, 1);
+
+                if (setterInfo.IsValueType) //not reference
+                {
+                    emitIl.Emit(OpCodes.Box, setterType);
+                }
+
+                emitIl.EmitCall(OpCodes.Callvirt, typeof(BaseAspect).GetMethod("OnPropertySetting"), new Type[] { typeof(AspectEventContext), typeof(object) });
+
+                if (len > 1)
+                {
+                    if (i < len - 1)
+                    {
+                        emitIl.Emit(OpCodes.Brfalse, falseLabel);
+                    }
+                    else
+                    {
+                        emitIl.Emit(OpCodes.Ldc_I4_0);
+                        emitIl.Emit(OpCodes.Ceq);
+                        emitIl.Emit(OpCodes.Br, trueLabel);
+                    }
+                }
+                else
+                {
+                    emitIl.Emit(OpCodes.Ldc_I4_0);
+                    emitIl.Emit(OpCodes.Ceq);
+                }
+            }
+
+            if (len > 1)
+            {
+                emitIl.MarkLabel(falseLabel);
+                emitIl.Emit(OpCodes.Ldc_I4_1);
+                emitIl.MarkLabel(trueLabel);
+            }
+
+            emitIl.Emit(OpCodes.Stloc, index.Store);
+            emitIl.Emit(OpCodes.Ldloc, index.Store);
+            emitIl.Emit(OpCodes.Brtrue, endLabel);
+            emitIl.Emit(OpCodes.Nop);
+
             emitIl.Emit(OpCodes.Ldarg_0);
-            emitIl.Emit(OpCodes.Ldstr, name);
-            emitIl.EmitCall(OpCodes.Call, typeof(AspectExtensions).GetMethod("CreateAspectContext", BindingFlags.Public | BindingFlags.Static), new Type[] { typeof(object), typeof(string) });
-            emitIl.Emit(OpCodes.Stloc, context);
+            emitIl.Emit(OpCodes.Ldarg_1);
+            emitIl.EmitCall(OpCodes.Call, method, types);
+
+            emitIl.Emit(OpCodes.Nop);
+            emitIl.MarkLabel(endLabel);
+        }
+
+        // Creates block wrapping the getter execution
+        private void EmitOnPropertyGetting(ILGenerator emitIl, Type baseType, Type propertyType, string propertyName, CustomAttributeContainer[] attributes)
+        {
+            var index = new StackIndex();
+
+            EmitAspectObjects(emitIl, attributes);
+
+            index.Store = index.Output = emitIl.DeclareLocal(propertyType);
+            index.Context = emitIl.DeclareLocal(typeof(AspectEventContext));
+
+            EmitEventParameters(emitIl, propertyName, index.Context);
+
+            emitIl.Emit(OpCodes.Ldarg_0);
+            emitIl.EmitCall(OpCodes.Call, baseType.GetMethod(propertyName), null);
+            emitIl.Emit(OpCodes.Stloc_S, index.Store);
+
+            EmitOnMethodReturning(AspectAction.OnPropertyGetting, emitIl, index, propertyType, attributes);
+
+            emitIl.Emit(OpCodes.Ldloc_S, index.Output);
+            emitIl.Emit(OpCodes.Ret);
         }
     }
 }
