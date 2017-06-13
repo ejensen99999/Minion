@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Minion.Web.TestObjs;
 using Minion.Inject;
 using Minion.Inject.Aspects;
+using Minion.Core.ServiceModel;
 
 namespace Minion.Web.Models
 {

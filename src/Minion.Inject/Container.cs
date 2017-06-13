@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Minion.Core;
+using Minion.Inject.Emit;
 using Minion.Inject.Exceptions;
 using Minion.Inject.Interfaces;
 using Minion.Inject.Profiling;
@@ -24,7 +25,9 @@ namespace Minion.Inject
 			dynamic instance)
 		{
 			var ctor = _profiler.GetOptimalConstructor(concrete);
-			var profile = new Profile(contract, concrete, lifeCycle, ctor, initializer, instance);
+		    var parameters = _profiler.GetParameters(ctor);
+		    var constructor = ConstructorEmitter.Emit(concrete, ctor, parameters);
+            var profile = new Profile(contract, lifeCycle, parameters, constructor, initializer, instance);
 			var builder = _profiler.GetTypeBuilder(profile, lifeCycle);
 
 			_builders.TryAdd(contract, builder);

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Minion.Configuration;
+using Minion.Core.ServiceModel;
 using Minion.Inject;
 using Minion.Inject.Middleware;
 using Minion.Web.Models;
@@ -49,7 +50,8 @@ namespace Minion.Web
                 .AddSingleton<ICoreConfiguration, CoreConfiguration>()
                 .AddTransient<IBusinessLogic, BusinessLogic>()
                 .AddTransient<IRespository, Respository>()
-                .AddScoped<ITest, Test>();
+                .AddScoped<ITest, Test>()
+                .AddService(typeof(ApiService<>), typeof(ApiService<>), ServiceLifetime.Transient, null, null);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Reflection;
 
 namespace Minion.Inject.Middleware
 {
@@ -57,6 +58,13 @@ namespace Minion.Inject.Middleware
                     var serviceType = service.ServiceType;
                     var instance = service.ImplementationInstance;
                     var instanceType = instance == null ? typeof(Nullable) : instance.GetType();
+
+                    if (serviceType.GetTypeInfo().IsGenericType
+                        && service.ImplementationType == null
+                        && service.ImplementationFactory == null)
+                    {
+                        serviceType = serviceType.GetDefinedType();
+                    }
 
                     if (service.ImplementationType != null)
                     {

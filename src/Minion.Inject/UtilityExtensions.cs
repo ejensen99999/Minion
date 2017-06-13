@@ -43,14 +43,26 @@ namespace Minion.Inject
 		{
 			var key = type.GetTypeName();
 			var obj = default(V);
-			dictionary.TryGetValue(key, out obj);
 
-			return obj;
+		    if (!dictionary.TryGetValue(key, out obj))
+		    {
+		        key = type.GetDefinedType()
+		            .GetTypeName();
+
+		        dictionary.TryGetValue(key, out obj);
+		    }
+
+		    return obj;
 		}
 
 	    public static string GetTypeName(this Type type)
 	    {
 	        return type.FullName;
+	    }
+
+	    public static Type GetDefinedType(this Type type)
+	    {
+            return type.GetTypeInfo().IsGenericType ? type.GetGenericTypeDefinition() : type;
 	    }
 	}
 }

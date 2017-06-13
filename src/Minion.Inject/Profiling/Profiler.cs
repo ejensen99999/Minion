@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Minion.Inject.Builders;
 using Minion.Inject.Exceptions;
 using Minion.Inject.Interfaces;
+using System.Collections.Generic;
 
 namespace Minion.Inject.Profiling
 {
@@ -14,6 +15,9 @@ namespace Minion.Inject.Profiling
 
 		ITypeBuilder GetTypeBuilder(Profile profile,
 			ServiceLifetime lifeCycle);
+
+	    IEnumerable<Type> GetParameters(ConstructorInfo ctor);
+
 	}
 
 	public class Profiler: IProfiler
@@ -69,5 +73,14 @@ namespace Minion.Inject.Profiling
 
 			return output;
 		}
+
+	    public IEnumerable<Type> GetParameters(ConstructorInfo ctor)
+	    {
+            var parameters = ctor?
+                .GetParameters()?
+                .Select(x => x.ParameterType);
+
+	        return parameters;
+	    }
 	}
 }

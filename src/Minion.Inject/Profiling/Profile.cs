@@ -4,20 +4,19 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Minion.Inject.Interfaces;
+using Minion.Inject.Emit;
 
 namespace Minion.Inject.Profiling
 {
-	public class Profile : IProfile
+	public class Profile
 	{
-	    private readonly ConstructorInfo _ctor;
-
-        public Type Concrete { get; }
-
 		public Type Contract { get; }
 
 		public ServiceLifetime Lifecycle { get; }
 
-		public List<Type> Parameters { get; }
+	    public bool IsGeneric { get; }
+
+	    public IEnumerable<Type> Parameters { get; }
 
 		public IConstructor Constructor { get; }
 
@@ -26,29 +25,21 @@ namespace Minion.Inject.Profiling
 		public dynamic Instance { get; set; }
 
 		public Profile(Type contract,
-			Type concrete,
 			ServiceLifetime lifeCycle,
-			ConstructorInfo ctor,
-			Func<Container, dynamic> initializer,
+			IEnumerable<Type> parameters,
+		    IConstructor constructor,
+            Func<Container, dynamic> initializer,
 			dynamic instance)
 		{
 			Contract = contract;
-			Concrete = concrete;
 			Lifecycle = lifeCycle;
+		    Parameters = parameters;
+		    Constructor = constructor;
 			Initializer = initializer;
 			Instance = instance;
 
-            _ctor = ctor;
-
-		    if (ctor != null)
-		    {
-		        Parameters = ctor
-		            .GetParameters()?
-		            .Select(x => x.ParameterType)
-		            .ToList();
-
-		        Constructor = ConstructorEmitter.Emit(concrete, ctor, Parameters);
-		    }
+		    IsGeneric = contract.GetTypeInfo()
+		        .IsGenericType;
 		}
 
 		public object Initiate(Container container, List<object> parameters)
