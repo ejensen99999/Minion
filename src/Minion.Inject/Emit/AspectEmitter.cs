@@ -7,7 +7,7 @@ using Minion.Inject.Aspects;
 
 namespace Minion.Inject.Emit
 {
-    public class AspectEmitter : IEmitter
+    public class AspectEmitter
     {
         private const string MODULE_NAME = "Minion.Inject.Aspects.Types.dll";
         private const string DECORATOR = "Proxy";

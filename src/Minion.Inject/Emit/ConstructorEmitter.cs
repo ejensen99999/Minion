@@ -11,7 +11,7 @@ namespace Minion.Inject.Emit
     public class ConstructorEmitter
 	{
 		private const string ModuleName = "Minion.Inject.Constructors.dll";
-	    private static readonly IEmitter _aspectEmitter;
+	    private static readonly AspectEmitter _aspectEmitter;
 
 	    static ConstructorEmitter()
 	    {
