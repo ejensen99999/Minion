@@ -8,9 +8,9 @@ using Minion.Configuration;
 using Minion.Core.ServiceModel;
 using Minion.Inject;
 using Minion.Inject.Middleware;
-using Minion.Web.Models;
 using Minion.Web.TestObjs;
 using System;
+using Minion.Web.Domain;
 
 namespace Minion.Web
 {
@@ -49,7 +49,7 @@ namespace Minion.Web
                 .AddConfiguration<PrintSettings>(Configuration)
                 .AddSingleton<ICoreConfiguration, CoreConfiguration>()
                 .AddTransient<IBusinessLogic, BusinessLogic>()
-                .AddTransient<IRespository, Respository>()
+                .AddTransient<IRespository, Repository>()
                 .AddScoped<ITest, Test>()
                 .AddService(typeof(ApiService<>), typeof(ApiService<>), ServiceLifetime.Transient, null, null);
         }

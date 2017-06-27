@@ -1,25 +1,24 @@
 ﻿using System;
 using Microsoft.Extensions.Logging;
-using Minion.Web.TestObjs;
 using Minion.Inject;
 using Minion.Inject.Aspects;
-using Minion.Core.ServiceModel;
+using Minion.Web.TestObjs;
 
-namespace Minion.Web.Models
+namespace Minion.Web.Domain
 {
     public interface IRespository
     {
         string GetId();
     }
 
-    public class Respository
-        : BaseRepository<Respository>,
+    public class Repository
+        : BaseRepository<Repository>,
             IRespository, IAspect
     {
         private readonly Settings _settings;
         private readonly ITest _test;
 
-        public Respository(ILoggerFactory log,
+        public Repository(ILoggerFactory log,
             ICoreConfiguration config,
             Settings settings,
             Container container,

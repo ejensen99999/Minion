@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Minion.Web.TestObjs;
 
-namespace Minion.Web.Models
+namespace Minion.Web.Domain
 {
     public interface IBusinessLogic
     {

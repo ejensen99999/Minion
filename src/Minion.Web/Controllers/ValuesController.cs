@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Minion.Web.Models;
+using Minion.Web.Domain;
 using Minion.Web.TestObjs;
 
 namespace Minion.Web.Controllers
