@@ -9,7 +9,7 @@ namespace Minion.CP.Abstraction
 {
 	public static class LinqExtensions
 	{
-		public static IEnumerable<T> Every<T>(this IEnumerable<T> collection, Action<T> action)
+		public static IEnumerable<T> ForAll<T>(this IEnumerable<T> collection, Action<T> action)
 		{
 			foreach (var item in collection)
 			{

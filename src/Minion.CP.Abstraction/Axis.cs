@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using sFndCLIWrapper;
@@ -30,25 +31,20 @@ namespace Minion.CP.Abstraction
 	{
 		private readonly IEnumerable<Motor> _motors;
 
-		private double _velocity = 2000;        //VEL_LIM_RPM
-		private double _acceleration = 8000;    //ACC_LIM_RPM_PER_SEC
-		private uint _jerk = 3;                 //RAS_CODE
-		private uint _trackLimit = 100;         //TRACKING_LIM
-		private int _trackGlobal = 100;         //TRQ_PCT
 		private bool _isQuitting = false;
 
 		public event Alert OnAlert;
 		public event MotionComplete OnMotion;
 		public event StatusUpdate OnStatus;
 
-		public bool IsEnabled => _motors.All(x => x.Node.Status.IsReady());
+		public bool IsEnabled => _motors.All(x => x.IsEnabled);
 
-		public bool WasHomed => _motors.All(x => x.Node.Motion.Homing.WasHomed());
+		public bool WasHomed => _motors.All(x => x.WasHomed);
 
 		public long Position => getPosition(_motors.First());
 
 		public Axis(cliINode[] nodes)
-			: this(nodes.Select(x => new Motor(x.Info.Ex.Addr.ToString(), x)))
+			: this(nodes.Select(x => new Motor(x, x.Info.Ex.Addr.ToString(), Path.GetTempPath())))
 		{
 		}
 
@@ -58,7 +54,7 @@ namespace Minion.CP.Abstraction
 			_motors = motors.ToList();
 
 			initConfiguration();
-			initMotionParameters();
+			SetMotionParameters();
 
 			Task.Factory.StartNew(alertWatcher);
 		}
@@ -84,9 +80,9 @@ namespace Minion.CP.Abstraction
 
 		public async Task Move(Guid correlationId, int position, bool IsAbsolute = false, bool AddDwell = false)
 		{
-			var tasks = _motors.Every(x =>
+			var tasks = _motors.ForAll(x =>
 			{
-				x.MoveTimeout = (int)x.Node.Motion.MovePosnDurationMsec(position, IsAbsolute);
+				x.MoveTimeout = x.GetMoveTime(position, IsAbsolute);
 				x.MoveTimeout += 20;
 
 				if (!IsAbsolute)
@@ -109,10 +105,9 @@ namespace Minion.CP.Abstraction
 
 		public async Task PrintStatistics()
 		{
-			_motors.Every(x =>
+			_motors.ForAll(x =>
 			{
-				x.Node.Motion.PosnCommanded.Refresh();
-				postStatusEvent(NodeStatus.Statistics, $"[{x.Node.Info.Ex.Addr}] : {x.Name}\t\t{x.MoveCount}\t\t{getPosition(x)}");
+				postStatusEvent(NodeStatus.Statistics, $"[{x.Address}] : {x.Name}\t\t{x.MoveCount}\t\t{getPosition(x)}");
 			});
 
 			await Task.Delay(10);
@@ -120,21 +115,26 @@ namespace Minion.CP.Abstraction
 
 		public void SetBrake(ulong breakNum, cliIBrakeControl._BrakeControls mode)
 		{
-			_motors.Every(x =>
+			_motors.ForAll(x =>
 			{
 				x.Node.Port.BrakeControl.BrakeSetting(breakNum, mode);
 			});
 		}
 
+		public void SetMotionParameters()
+		{
+			_motors.ForAll(x =>
+			{
+				x.SetMotionParameters();
+			});
+		}
+
 		public void SetMotionParameters(double velocity, double acceleration, uint jerk, uint trackLimit, int trackGlobal)
 		{
-			_velocity = velocity;
-			_acceleration = acceleration;
-			_jerk = jerk;
-			_trackLimit = trackLimit;
-			_trackGlobal = trackGlobal;
-
-			initMotionParameters();
+			_motors.ForAll(x =>
+			{
+				x.SetMotionParameters(velocity, acceleration, jerk, trackLimit, trackGlobal);
+			});
 		}
 
 		public void Dispose()
@@ -144,9 +144,9 @@ namespace Minion.CP.Abstraction
 			PrintStatistics().Wait();
 
 			var tasks = _motors
-				.Every(x =>
+				.ForAll(x =>
 				{
-					if (!x.Node.Setup.AccessLevelIsFull())
+					if (!x.IsFullAccess)
 					{
 						return;
 					}
@@ -163,15 +163,13 @@ namespace Minion.CP.Abstraction
 		{
 			while (!_isQuitting)
 			{
-				_motors.Every(x =>
+				_motors.ForAll(x =>
 				{
-					x.Node.Status.Alerts.Refresh();
-					x.Node.Status.RT.Refresh();
+					var alerts = x.GetAlerts();
 
-					if (x.Node.Status.RT.Value().cpm.AlertPresent != 0)
+					if (!string.IsNullOrWhiteSpace(alerts))
 					{
-						var alertList = x.Node.Status.Alerts.Value().StateStr();
-						postAlertEvent(x, "Node has alerts! Alert: {alertList}");
+						postAlertEvent(x, $"Node has alerts! Alert: {alerts}");
 					}
 				});
 				Task.Delay(100);
@@ -181,8 +179,6 @@ namespace Minion.CP.Abstraction
 		private async Task disposeThread(Motor motor)
 		{
 			var watch = new Stopwatch();
-			var node = motor.Node;
-
 			do
 			{
 				await Task.Delay(50);
@@ -194,23 +190,20 @@ namespace Minion.CP.Abstraction
 				}
 			} while (IsEnabled);
 
-			node.Setup.ConfigLoad(motor.ConfigFile, false);
-			node.Dispose();
+			motor.Dispose();
 		}
 
-		private async Task enableThread(Motor motor, bool IsEnabled = true)
+		private async Task enableThread(Motor motor, bool shouldEnable = true)
 		{
-			var node = motor.Node;
-			var statusStart = IsEnabled ? NodeStatus.Enabling : NodeStatus.Disabling;
-			var statusDone = IsEnabled ? NodeStatus.Enabled : NodeStatus.Disabled;
+			//var node = motor.Node;
+			var address = motor.Address;
+			var statusStart = shouldEnable ? NodeStatus.Enabling : NodeStatus.Disabling;
+			var statusDone = shouldEnable ? NodeStatus.Enabled : NodeStatus.Disabled;
 
-			node.Status.AlertsClear();
-			node.Motion.NodeStop(cliNodeStopCodes.STOP_TYPE_ABRUPT);
-			node.Motion.NodeStop(cliNodeStopCodes.STOP_TYPE_CLR_ALL);
+			motor.Enable();
 
 			var watch = new Stopwatch();
-			postStatusEvent(statusStart, $"{node.Info.Ex.Addr} {statusStart}");
-			node.EnableReq(IsEnabled);
+			postStatusEvent(statusStart, $"{address} {statusStart}");
 
 			do
 			{
@@ -220,22 +213,18 @@ namespace Minion.CP.Abstraction
 					postAlertEvent(motor, "Timed out waiting for enable");
 				}
 
-			} while (node.Status.IsReady() != IsEnabled);
+			} while (motor.IsEnabled != shouldEnable);
 
-			postStatusEvent(statusDone, $"{node.Info.Ex.Addr} {statusDone}");
+			postStatusEvent(statusDone, $"{address} {statusDone}");
 		}
 
 		private long getPosition(Motor motor)
 		{
-			var node = motor.Node;
-
-			node.Motion.PosnCommanded.Refresh();
-
-			var position = (long)node.Motion.PosnCommanded.Value();
+			var position = motor.Position;
 
 			if (motor.WrapCount != 0)
 			{
-				position += (Int64)motor.WrapCount << 32;
+				position += (long)motor.WrapCount << 32;
 			}
 
 			return position;
@@ -243,13 +232,12 @@ namespace Minion.CP.Abstraction
 
 		private async Task homeThread(Motor motor)
 		{
-			var node = motor.Node;
-
-			if (node.Status.IsReady() && node.Motion.Homing.HomingValid())
+			if (motor.IsEnabled && motor.CanHome)
 			{
 				var watch = new Stopwatch();
-				postStatusEvent(NodeStatus.Homed, $"{node.Info.Ex.Addr} Homing...");
-				node.Motion.Homing.Initiate();
+				postStatusEvent(NodeStatus.Homed, $"{motor.Address} Homing...");
+
+				motor.Home();
 
 				do
 				{
@@ -260,83 +248,61 @@ namespace Minion.CP.Abstraction
 						return;
 					}
 
-				} while (!node.Motion.Homing.WasHomed());
+				} while (!motor.WasHomed);
 
-				postStatusEvent(NodeStatus.Homed, $"{node.Info.Ex.Addr} Homing Complete");
+				postStatusEvent(NodeStatus.Homed, $"{motor.Address} Homing Complete");
 			}
 		}
 
 		private void initConfiguration()
 		{
-			var tempPath = System.IO.Path.GetTempPath();
-
-			_motors.Every(x =>
+			_motors.ForAll(x =>
 			{
-				x.Node.VelUnit(cliINode._velUnits.RPM);
-				x.Node.AccUnit(cliINode._accUnits.RPM_PER_SEC);
-				x.Node.Motion.DwellMs.Value(5);
+				x.Configure();
 
-				if (x.Node.Setup.AccessLevelIsFull())
-				{
-					x.ConfigFile = $"{tempPath}{x.Node.Info.Ex.Addr}{x.Node.Info.SerialNumber.Value()}";
-					x.Node.Setup.ConfigSave(x.ConfigFile);
-				}
-
-			});
-		}
-
-		private void initMotionParameters()
-		{
-			_motors.Every(x =>
-			{
-				x.Node.Motion.VelLimit.Value(_velocity);
-				x.Node.Motion.AccLimit.Value(_acceleration);
-				x.Node.Motion.JrkLimit.Value(_jerk);
-				x.Node.Limits.PosnTrackingLimit.Value(_trackLimit);
-				x.Node.Limits.TrqGlobal.Value(_trackGlobal);
 			});
 		}
 
 		public async Task moveThread(Motor motor, Guid correlationId, int position, bool IsAbsolute, bool AddDwell)
 		{
 			var watch = new Stopwatch();
-			var node = motor.Node;
-			var addr = node.Info.Ex.Addr.ToString();
+			var address = motor.Address;
 			var alerts = new List<string>();
 
 			postMotionEvent(correlationId, false, $"Motor [{motor.Name}] starting its movement");
 			postStatusEvent(NodeStatus.Moving, $"Motor [{motor.Name}] starting its movement");
 
-			node.Motion.MovePosnStart(position, IsAbsolute, AddDwell);
+			motor.Move(position, IsAbsolute, AddDwell);
+			var status = MoveStatus.Moving;
 
 			do
 			{
-				node.Status.RT.Refresh();
-
 				await Task.Delay(50);
+
+				status = motor.MoveStatus;
 
 				if (watch.IsExpired(motor.MoveTimeout))
 				{
-					alerts.Add($"Error: [{addr}] : {motor.Name} -> Timed out during move");
+					alerts.Add($"Error: [{address}] : {motor.Name} -> Timed out during move");
 				}
 
-				if (node.Status.RT.Value().cpm.Disabled != 0)
+				if (status == MoveStatus.Disabled)
 				{
-					alerts.Add($"Error: [{addr}] : {motor.Name} -> disabled during move");
+					alerts.Add($"Error: [{address}] : {motor.Name} -> disabled during move");
 				}
 
-				if (node.Status.RT.Value().cpm.NotReady != 0)
+				if (status == MoveStatus.NotReady)
 				{
-					alerts.Add($"ERROR: [{addr}] : {motor.Name} -> went NotReady during move");
+					alerts.Add($"ERROR: [{address}] : {motor.Name} -> went NotReady during move");
 				}
 
 				if (alerts.Any())
 				{
-					postAlertEvent(addr, alerts.ToArray());
+					postAlertEvent(address, alerts.ToArray());
 					return;
 				}
 
-			} while (node.Status.RT.Value().cpm.MoveDone != 0);
+			} while (status != MoveStatus.Done);
 
 			postMotionEvent(correlationId, true, $"Motor [{motor.Name}] completed its movement");
 			postStatusEvent(NodeStatus.Moved, $"Motor [{motor.Name}] completed its movement");
@@ -344,7 +310,8 @@ namespace Minion.CP.Abstraction
 
 		private void postAlertEvent(Motor motor, string text)
 		{
-			postAlertEvent(motor.Node.Info.Ex.Addr.ToString(), new[] { $"Error: [{motor.Node.Info.Ex.Addr}] : {motor.Name} -> {text}" });
+			var addr = motor.Address;
+			postAlertEvent(addr, new[] { $"Error: [{addr}] : {motor.Name} -> {text}" });
 		}
 
 		private void postAlertEvent(string address, string[] alerts)

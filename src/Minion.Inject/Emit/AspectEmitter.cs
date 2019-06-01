@@ -9,15 +9,15 @@ namespace Minion.Inject.Emit
 {
     public class AspectEmitter
     {
-        private const string MODULE_NAME = "Minion.Inject.Aspects.Types.dll";
-        private const string DECORATOR = "Proxy";
+        private const string _moduleName = "Minion.Inject.Aspects.Types.dll";
+        private const string _decorator = "Proxy";
         private readonly ModuleBuilder _modBuilder;
 
         public AspectEmitter()
         {
             var assemblyName = new AssemblyName() { Name = "Minion.Inject.Aspects.Proxies" };
             var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
-            _modBuilder = assemblyBuilder.DefineDynamicModule(MODULE_NAME);
+            _modBuilder = assemblyBuilder.DefineDynamicModule(_moduleName);
         }
 
         public Type CreateAspectProxyType<T>(ConstructorInfo ctor = null)
@@ -36,7 +36,7 @@ namespace Minion.Inject.Emit
             }
 
             var typeAttr = TypeAttributes.Class | TypeAttributes.Public;
-            var typeBuilder = _modBuilder.DefineType(baseType.FullName + DECORATOR, typeAttr, baseType);
+            var typeBuilder = _modBuilder.DefineType(baseType.FullName + _decorator, typeAttr, baseType);
 
             if (ctor == null)
             {

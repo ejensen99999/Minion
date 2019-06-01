@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using sFndCLIWrapper;
 
 namespace Minion.CP.Abstraction
 {

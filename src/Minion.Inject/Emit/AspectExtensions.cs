@@ -40,7 +40,7 @@ namespace Minion.Inject.Emit
             return output;
         }
 
-        public static IEnumerable<CustomAttributeContainer> GetAttributeContainers(IEnumerable<Attribute> attributes,
+        public static IEnumerable<CustomAttributeContainer> GetAttributeContainers(object[] attributes,
             IList<CustomAttributeData> attributesData)
         {
             var output = new List<CustomAttributeContainer>();
@@ -49,7 +49,7 @@ namespace Minion.Inject.Emit
 
             for (var i = 0; i < atts.Length; i++)
             {
-                var attribute = atts[i];
+                var attribute = (Attribute)atts[i];
                 var datum = data[i];
 
                 if (!CheckDependancyChain(attribute.GetType(), typeof(BaseAspect)))

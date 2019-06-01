@@ -24,5 +24,29 @@ namespace Minion.Web.Presentation
         {
         }
 
-    }
+		public string Audit(TestRequest request)
+		{
+			throw new NotImplementedException();
+		}
+
+		public string Condition(DateTime birthDate)
+		{
+			throw new NotImplementedException();
+		}
+
+		public string EventSource(TestRequest request)
+		{
+			throw new NotImplementedException();
+		}
+
+		public string Transform(DateTime birthDate)
+		{
+			throw new NotImplementedException();
+		}
+
+		public string Validate(DateTime birthDate)
+		{
+			throw new NotImplementedException();
+		}
+	}
 }
