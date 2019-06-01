@@ -52,6 +52,7 @@
     <Compile Include="Extensions\HelpfulExtensions.cs" />
     <Compile Include="Extensions\LinqExtensions.cs" />
     <Compile Include="Motor.cs" />
+    <Compile Include="MoveStatus.cs" />
     <Compile Include="NodeStatus.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

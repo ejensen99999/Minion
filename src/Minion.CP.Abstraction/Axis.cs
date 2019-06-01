@@ -43,6 +43,18 @@ namespace Minion.CP.Abstraction
 
 		public long Position => getPosition(_motors.First());
 
+		private long getPosition(Motor motor)
+		{
+			var position = motor.Position;
+
+			if (motor.WrapCount != 0)
+			{
+				position += (long)motor.WrapCount << 32;
+			}
+
+			return position;
+		}
+
 		public Axis(cliINode[] nodes)
 			: this(nodes.Select(x => new Motor(x, x.Info.Ex.Addr.ToString(), Path.GetTempPath())))
 		{
@@ -62,138 +74,14 @@ namespace Minion.CP.Abstraction
 		public async Task Enable(bool IsEnabled = true)
 		{
 			var tasks = _motors
-				.Select(x => enableThread(x, IsEnabled))
+				.Select(x => enableTaskAsync(x, IsEnabled))
 				.ToArray();
 
 			await Task.WhenAll(tasks);
 			await Home();
 		}
 
-		public async Task Home()
-		{
-			var tasks = _motors
-				.Select(x => homeThread(x))
-				.ToArray();
-
-			await Task.WhenAll(tasks);
-		}
-
-		public async Task Move(Guid correlationId, int position, bool IsAbsolute = false, bool AddDwell = false)
-		{
-			var tasks = _motors.ForAll(x =>
-			{
-				x.MoveTimeout = x.GetMoveTime(position, IsAbsolute);
-				x.MoveTimeout += 20;
-
-				if (!IsAbsolute)
-				{
-					if (getPosition(x) + position > Int32.MaxValue)
-					{
-						x.WrapCount++;
-					}
-					else if (getPosition(x) + position < Int32.MinValue)
-					{
-						x.WrapCount--;
-					}
-				}
-			})
-			.Select(x => moveThread(x, correlationId, position, IsAbsolute, AddDwell))
-			.ToArray();
-
-			await Task.WhenAll(tasks);
-		}
-
-		public async Task PrintStatistics()
-		{
-			_motors.ForAll(x =>
-			{
-				postStatusEvent(NodeStatus.Statistics, $"[{x.Address}] : {x.Name}\t\t{x.MoveCount}\t\t{getPosition(x)}");
-			});
-
-			await Task.Delay(10);
-		}
-
-		public void SetBrake(ulong breakNum, cliIBrakeControl._BrakeControls mode)
-		{
-			_motors.ForAll(x =>
-			{
-				x.Node.Port.BrakeControl.BrakeSetting(breakNum, mode);
-			});
-		}
-
-		public void SetMotionParameters()
-		{
-			_motors.ForAll(x =>
-			{
-				x.SetMotionParameters();
-			});
-		}
-
-		public void SetMotionParameters(double velocity, double acceleration, uint jerk, uint trackLimit, int trackGlobal)
-		{
-			_motors.ForAll(x =>
-			{
-				x.SetMotionParameters(velocity, acceleration, jerk, trackLimit, trackGlobal);
-			});
-		}
-
-		public void Dispose()
-		{
-			_isQuitting = true;
-
-			PrintStatistics().Wait();
-
-			var tasks = _motors
-				.ForAll(x =>
-				{
-					if (!x.IsFullAccess)
-					{
-						return;
-					}
-
-					Enable(false).Wait();
-
-				})
-				.Select(x => disposeThread(x)).ToArray();
-
-			Task.WhenAll(tasks).Wait();
-		}
-
-		private void alertWatcher()
-		{
-			while (!_isQuitting)
-			{
-				_motors.ForAll(x =>
-				{
-					var alerts = x.GetAlerts();
-
-					if (!string.IsNullOrWhiteSpace(alerts))
-					{
-						postAlertEvent(x, $"Node has alerts! Alert: {alerts}");
-					}
-				});
-				Task.Delay(100);
-			}
-		}
-
-		private async Task disposeThread(Motor motor)
-		{
-			var watch = new Stopwatch();
-			do
-			{
-				await Task.Delay(50);
-
-				if (watch.IsExpired(3000))
-				{
-					postAlertEvent(motor, "Timed out waiting to disable and dispose");
-					break;
-				}
-			} while (IsEnabled);
-
-			motor.Dispose();
-		}
-
-		private async Task enableThread(Motor motor, bool shouldEnable = true)
+		private async Task enableTaskAsync(Motor motor, bool shouldEnable = true)
 		{
 			//var node = motor.Node;
 			var address = motor.Address;
@@ -218,19 +106,16 @@ namespace Minion.CP.Abstraction
 			postStatusEvent(statusDone, $"{address} {statusDone}");
 		}
 
-		private long getPosition(Motor motor)
+		public async Task Home()
 		{
-			var position = motor.Position;
+			var tasks = _motors
+				.Select(x => homeTaskAsync(x))
+				.ToArray();
 
-			if (motor.WrapCount != 0)
-			{
-				position += (long)motor.WrapCount << 32;
-			}
-
-			return position;
+			await Task.WhenAll(tasks);
 		}
 
-		private async Task homeThread(Motor motor)
+		private async Task homeTaskAsync(Motor motor)
 		{
 			if (motor.IsEnabled && motor.CanHome)
 			{
@@ -254,16 +139,32 @@ namespace Minion.CP.Abstraction
 			}
 		}
 
-		private void initConfiguration()
+		public async Task Move(Guid correlationId, int position, bool IsAbsolute = false, bool AddDwell = false)
 		{
-			_motors.ForAll(x =>
+			var tasks = _motors.ForAll(x =>
 			{
-				x.Configure();
+				x.MoveTimeout = x.GetMoveTime(position, IsAbsolute);
+				x.MoveTimeout += 20;
 
-			});
+				if (!IsAbsolute)
+				{
+					if (getPosition(x) + position > Int32.MaxValue)
+					{
+						x.WrapCount++;
+					}
+					else if (getPosition(x) + position < Int32.MinValue)
+					{
+						x.WrapCount--;
+					}
+				}
+			})
+			.Select(x => moveTaskAsync(x, correlationId, position, IsAbsolute, AddDwell))
+			.ToArray();
+
+			await Task.WhenAll(tasks);
 		}
 
-		public async Task moveThread(Motor motor, Guid correlationId, int position, bool IsAbsolute, bool AddDwell)
+		public async Task moveTaskAsync(Motor motor, Guid correlationId, int position, bool IsAbsolute, bool AddDwell)
 		{
 			var watch = new Stopwatch();
 			var address = motor.Address;
@@ -306,6 +207,106 @@ namespace Minion.CP.Abstraction
 
 			postMotionEvent(correlationId, true, $"Motor [{motor.Name}] completed its movement");
 			postStatusEvent(NodeStatus.Moved, $"Motor [{motor.Name}] completed its movement");
+		}
+
+		public async Task PrintStatistics()
+		{
+			_motors.ForAll(x =>
+			{
+				postStatusEvent(NodeStatus.Statistics, $"[{x.Address}] : {x.Name}\t\t{x.MoveCount}\t\t{getPosition(x)}");
+			});
+
+			await Task.Delay(10);
+		}
+
+		//If this is part of the Port why here?
+		public void SetBrake(ulong breakNum, cliIBrakeControl._BrakeControls mode)
+		{
+			_motors.ForAll(x =>
+			{
+				x.Node.Port.BrakeControl.BrakeSetting(breakNum, mode);
+			});
+		}
+
+		public void SetMotionParameters()
+		{
+			_motors.ForAll(x =>
+			{
+				x.SetMotionParameters();
+			});
+		}
+
+		public void SetMotionParameters(double velocity, double acceleration, uint jerk, uint trackLimit, int trackGlobal)
+		{
+			_motors.ForAll(x =>
+			{
+				x.SetMotionParameters(velocity, acceleration, jerk, trackLimit, trackGlobal);
+			});
+		}
+
+		public void Dispose()
+		{
+			_isQuitting = true;
+
+			PrintStatistics().Wait();
+
+			var tasks = _motors
+				.ForAll(x =>
+				{
+					if (!x.IsFullAccess)
+					{
+						return;
+					}
+
+					Enable(false).Wait();
+
+				})
+				.Select(x => disposeTaskAsync(x)).ToArray();
+
+			Task.WhenAll(tasks).Wait();
+		}
+
+		private async Task disposeTaskAsync(Motor motor)
+		{
+			var watch = new Stopwatch();
+			do
+			{
+				await Task.Delay(50);
+
+				if (watch.IsExpired(3000))
+				{
+					postAlertEvent(motor, "Timed out waiting to disable and dispose");
+					break;
+				}
+			} while (IsEnabled);
+
+			motor.Dispose();
+		}
+
+		private void alertWatcher()
+		{
+			while (!_isQuitting)
+			{
+				_motors.ForAll(x =>
+				{
+					var alerts = x.GetAlerts();
+
+					if (!string.IsNullOrWhiteSpace(alerts))
+					{
+						postAlertEvent(x, $"Node has alerts! Alert: {alerts}");
+					}
+				});
+				Task.Delay(100);
+			}
+		}
+
+		private void initConfiguration()
+		{
+			_motors.ForAll(x =>
+			{
+				x.Configure();
+
+			});
 		}
 
 		private void postAlertEvent(Motor motor, string text)
