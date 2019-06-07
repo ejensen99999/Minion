@@ -6,11 +6,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0BB51F8A-916B-4E07-9E19-B5C448665586}</ProjectGuid>
+    <ProjectGuid>{C423E4AC-AD9C-41E2-B2FC-CCC86063DC97}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Minion.CP.Abstraction</RootNamespace>
-    <AssemblyName>Minion.CP.Abstraction</AssemblyName>
+    <AssemblyName>Minion.CP.Abstraction.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -36,8 +36,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CLRWrapper">
-      <HintPath>.\CLRWrapper.dll</HintPath>
+    <Reference Include="Shouldly, Version=3.0.2.0, Culture=neutral, PublicKeyToken=6042cbcb05cbc941, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Shouldly.3.0.2\lib\net451\Shouldly.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -61,43 +61,20 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Abstractions\Axis.cs" />
-    <Compile Include="Extensions\CodeExtensions.cs" />
-    <Compile Include="Types\GCode.cs" />
-    <Compile Include="Types\MCode.cs" />
-    <Compile Include="EventArguments\AxisAlertEventArgs.cs" />
-    <Compile Include="EventArguments\AxisMotionEventArgs.cs" />
-    <Compile Include="EventArguments\AxisStatusEventArgs.cs" />
-    <Compile Include="ClearPathDemon.cs" />
-    <Compile Include="Extensions\HelpfulExtensions.cs" />
-    <Compile Include="Extensions\LinqExtensions.cs" />
-    <Compile Include="Abstractions\Motor.cs" />
-    <Compile Include="GCodeInterpretor.cs" />
-    <Compile Include="Types\MoveStatus.cs" />
-    <Compile Include="Types\NodeStatus.cs" />
+    <Compile Include="Extensions\CodeExtensionsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="MNuserDriver20.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="sFoundation20.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="sFoundation20.lib">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="CodeLibrary\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\..\packages\xunit.analyzers.0.10.0\analyzers\dotnet\cs\xunit.analyzers.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Minion.CP.Abstraction\Minion.CP.Abstraction.csproj">
+      <Project>{0bb51f8a-916b-4e07-9e19-b5c448665586}</Project>
+      <Name>Minion.CP.Abstraction</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -23,7 +23,7 @@ namespace Minion.CP.Abstraction
 		bool IsEnabled { get; }
 		bool WasHomed { get; }
 
-		void SetBrake(ulong breakNum /*should be ALL right?*/, cliIBrakeControl._BrakeControls mode);
+		//void SetBrake(ulong breakNum, cliIBrakeControl._BrakeControls mode);
 		void SetMotionParameters(double velocity, double acceleration, uint jerk, uint trackLimit, int trackGlobal);
 	}
 
@@ -220,13 +220,13 @@ namespace Minion.CP.Abstraction
 		}
 
 		//If this is part of the Port why here?
-		public void SetBrake(ulong breakNum, cliIBrakeControl._BrakeControls mode)
-		{
-			_motors.ForAll(x =>
-			{
-				x.Node.Port.BrakeControl.BrakeSetting(breakNum, mode);
-			});
-		}
+		//public void SetBrake(ulong breakNum, cliIBrakeControl._BrakeControls mode)
+		//{
+		//	_motors.ForAll(x =>
+		//	{
+		//		x.Node.Port.BrakeControl.BrakeSetting(breakNum, mode);
+		//	});
+		//}
 
 		public void SetMotionParameters()
 		{
